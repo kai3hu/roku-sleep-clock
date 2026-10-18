@@ -9,7 +9,7 @@
             height="150"
             horizAlign="center"
             vertAlign="center"
-            color="0x303030FF">
+            color="0x181818FF">
             <Font role="font" uri="font:SystemFontFile" size="110" />
         </Label>
         <Timer id="tick" duration="1" repeat="true" />

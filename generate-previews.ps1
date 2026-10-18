@@ -62,7 +62,7 @@ function Save-WeatherIcons {
         try {
             $graphics.Clear([Drawing.Color]::Transparent)
             $graphics.SmoothingMode=[Drawing.Drawing2D.SmoothingMode]::AntiAlias
-            Draw-WeatherSymbol $graphics $kind '#303030'
+            Draw-WeatherSymbol $graphics $kind '#242424'
             $bitmap.Save((Join-Path $directory "$kind.png"),[Drawing.Imaging.ImageFormat]::Png)
         } finally {$graphics.Dispose(); $bitmap.Dispose()}
     }
@@ -163,6 +163,10 @@ foreach ($agenda in @($false, $true)) {
     New-Item -ItemType Directory -Force -Path $assetRoot | Out-Null
     Save-MenuThumbnail (Join-Path $assetRoot 'menu-hd.png') 290 218 $agenda
     Save-MenuThumbnail (Join-Path $assetRoot 'menu-fhd.png') 540 405 $agenda
-    Save-ScreenPreview (Join-Path $previewDirectory "$name.png") $agenda '#303030'
+    $actualColor = if ($agenda) { '#242424' } else { '#181818' }
+    Save-ScreenPreview (Join-Path $previewDirectory "$name.png") $agenda $actualColor
+    if ($agenda) {
+        Save-ScreenPreview (Join-Path $previewDirectory "$name-night.png") $agenda '#0C0C0C'
+    }
     Save-ScreenPreview (Join-Path $previewDirectory "$name-readable.png") $agenda '#999999'
 }

@@ -1,8 +1,8 @@
 {
   "name": "roku-sleep-clock",
-  "version": "1.0.8",
+  "version": "1.0.12",
   "private": true,
-  "description": "Dim Roku screensavers with overnight clock mode, Outlook agenda and Celsius weather forecasts.",
+  "description": "Dim Roku screensavers with automatic day/night brightness, Outlook agenda and Celsius weather forecasts.",
   "scripts": {
     "test": "node scripts/test.cjs",
     "check": "bsc --root-dir outlook-screensaver --copy-to-staging=false --create-package=false --diagnostic-level warn",

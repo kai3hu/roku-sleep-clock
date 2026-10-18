@@ -19,7 +19,7 @@ const suites = [
       'outlook-screensaver/components/NightScheduleScene.brs',
       'tests/display-tests.brs'
     ],
-    success: /PASS: Startup, morning and midnight visibility transitions/
+    success: /PASS: Text, chart and icon brightness transitions without hiding content/
   }
 ];
 

@@ -26,7 +26,7 @@ For a local developer checkout using a different package manager, the same `test
 
 - Pure black background
 - Large 24-hour local time
-- Dim gray text (`#303030`) on an explicitly opaque black background (`#000000`)
+- Dim gray text (`#181818`) on an explicitly opaque black background (`#000000`)
 - Moves every 10 minutes to reduce OLED image retention
 - No network access, ads, or sound
 
@@ -35,9 +35,10 @@ Package: `dist/night-clock-roku.zip`
 ### Sleep Clock + Agenda
 
 - Displays the same large clock
-- From 00:00 to 06:59, only the clock is visible; from 07:00 to 23:59, agenda and weather are visible too
-- Automatically switches at the time boundary while running, using the Roku device's local timezone
-- Keeps calendar/weather refresh running in the background overnight, with an immediate refresh at 07:00
+- Clock, agenda and weather remain visible at all hours
+- From 23:00 through 06:59, all text, charts and weather icons use an extra-dim palette (approximately `#0C0C0C`)
+- From 07:00 to 22:59, the palette increases to `#242424`
+- Automatically adjusts at the time boundary using the Roku device's local timezone; data continues refreshing every 5 minutes
 - Displays events overlapping the rolling next 7 days, sorted by start time and labeled with weekday, date and local time
 - Automatically pages every 20 seconds when there are more than 12 events; the layout stays in a fixed position
 - Refreshes the calendar every 5 minutes while the screensaver is running
@@ -55,7 +56,7 @@ Calendar recurrence support includes common daily, weekly, monthly and yearly ru
 
 ## Logic validation
 
-Developer tools can be installed under the ignored `.tools` directory. Run `node .tools/node_modules/brs/bin/cli.js outlook-screensaver/components/DisplaySchedule.brs outlook-screensaver/components/CalendarParser.brs outlook-screensaver/components/WeatherTask.brs tests/logic-tests.brs` for overnight schedule-boundary, calendar-window, recurrence, exception, timezone and 24-hour forecast tests. A successful run ends with `TEST_FAILURES= 0`.
+Developer tools can be installed under the ignored `.tools` directory. Run `node .tools/node_modules/brs/bin/cli.js outlook-screensaver/components/DisplaySchedule.brs outlook-screensaver/components/CalendarParser.brs outlook-screensaver/components/WeatherTask.brs tests/logic-tests.brs` for day/night brightness boundaries, calendar-window, recurrence, exception, timezone and 24-hour forecast tests. A successful run ends with `TEST_FAILURES= 0`.
 
 ## Connect the Outlook calendar
 
@@ -90,7 +91,7 @@ The screensaver list uses the names **Sleep Clock** and **Sleep Clock + Agenda**
 
 Use the system **Preview** option in the screensaver detail menu when available to run the actual screensaver. A static preview image does not replace this system function.
 
-`dist/previews` contains layout previews with sample events. Files ending in `-readable.png` use brighter text for viewing on a tablet. Other previews use the actual `#303030` text color. These are layout simulations using a Windows font, not captures from a Roku TV. Event titles are sample text, not private Outlook data.
+`dist/previews` contains layout previews with sample events. Files ending in `-readable.png` use brighter text for viewing on a tablet. The agenda daytime preview uses `#242424`, and `sleep-clock-agenda-night.png` uses `#0C0C0C`; both show all information. The standalone clock preview uses `#181818`. These are layout simulations using a Windows font, not captures from a Roku TV. Event titles are sample text, not private Outlook data.
 
 ## Brightness
 

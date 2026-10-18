@@ -6,7 +6,8 @@ sub init()
     m.agenda = m.top.FindNode("agenda")
     m.heading = m.top.FindNode("heading")
     m.weatherGroup = m.top.FindNode("weather")
-    m.detailsVisible = invalid
+    m.displayColor = ""
+    m.iconTint = ""
     m.tick = m.top.FindNode("tick")
     m.refresh = m.top.FindNode("refresh")
     m.calendarTask = m.top.FindNode("calendarTask")
@@ -33,6 +34,7 @@ sub init()
     loadWeather()
     m.tick.control = "start"
     m.refresh.control = "start"
+    m.pageTimer.control = "start"
 end sub
 
 sub onTick()
@@ -49,20 +51,20 @@ sub updateClock()
 end sub
 
 sub applyDisplaySchedule(localHour as integer)
-    showDetails = showScheduleDetails(localHour)
-    if m.detailsVisible = showDetails then return
-    wasNight = m.detailsVisible = false
-    m.detailsVisible = showDetails
-    m.heading.visible = showDetails
-    m.agenda.visible = showDetails
-    m.weatherGroup.visible = showDetails
-    if showDetails
-        m.pageTimer.control = "start"
-        ' Refresh immediately when the overnight clock-only period ends.
-        if wasNight then refreshData()
-    else
-        m.pageTimer.control = "stop"
-    end if
+    color = scheduleTextColor(localHour)
+    if m.displayColor = color then return
+    m.displayColor = color
+    m.iconTint = scheduleIconTint(localHour)
+    applyContentPalette(m.content, m.displayColor, m.iconTint)
+end sub
+
+sub applyContentPalette(node as object, color as string, iconTint as string)
+    kind = node.subtype()
+    if kind = "Label" or kind = "Rectangle" then node.color = color
+    if kind = "Poster" then node.blendColor = iconTint
+    for i = 0 to node.getChildCount() - 1
+        applyContentPalette(node.getChild(i), color, iconTint)
+    end for
 end sub
 
 sub loadCalendar()
@@ -145,7 +147,7 @@ sub renderForecast(result as object)
         bar = m.weatherChart.createChild("Rectangle")
         bar.width = 14
         bar.height = height
-        bar.color = "0x303030FF"
+        bar.color = m.displayColor
         bar.translation = [i * 25, 130 - height]
         if i mod 6 = 0 or i = 23
             label = createWeatherLabel(m.weatherChart, point.hour, 20, 80, 30)
@@ -161,6 +163,7 @@ sub renderForecast(result as object)
             label.translation = [x, y]
             icon = m.weatherForecast.createChild("Poster")
             icon.uri = point.icon
+            icon.blendColor = m.iconTint
             icon.width = 40
             icon.height = 40
             icon.translation = [x, y + 40]
@@ -173,7 +176,7 @@ end sub
 function createWeatherLabel(parent as object, text as string, size as integer, width as integer, height as integer) as object
     label = parent.createChild("Label")
     label.text = text
-    label.color = "0x303030FF"
+    label.color = m.displayColor
     label.width = width
     label.height = height
     font = CreateObject("roSGNode", "Font")
