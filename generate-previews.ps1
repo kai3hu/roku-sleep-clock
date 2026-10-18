@@ -154,9 +154,33 @@ function Save-MenuThumbnail {
     } finally { $graphics.Dispose(); $bitmap.Dispose() }
 }
 
+function Save-WikiPreview {
+    param([string]$Path, [string]$Color)
+    $bitmap = [Drawing.Bitmap]::new(1920, 1080)
+    $graphics = [Drawing.Graphics]::FromImage($bitmap)
+    $font = [Drawing.Font]::new('Segoe UI', 32, [Drawing.FontStyle]::Regular, [Drawing.GraphicsUnit]::Pixel)
+    $brush = [Drawing.SolidBrush]::new([Drawing.ColorTranslator]::FromHtml($Color))
+    try {
+        $graphics.Clear([Drawing.Color]::Black)
+        $graphics.TextRenderingHint = [Drawing.Text.TextRenderingHint]::AntiAliasGridFit
+        Write-PreviewText $graphics '23:48' 110 120 80 $Color
+        Write-PreviewText $graphics 'DAILY WIKIPEDIA  /  1 OF 5  /  FEATURED 2026-10-18' 28 132 270 $Color
+        Write-PreviewText $graphics 'Bioluminescence' 52 132 345 $Color
+        # Original sample text, not a downloaded Wikipedia excerpt.
+        $sample = 'Bioluminescence is the production of light by living organisms through a chemical reaction. It occurs in fireflies, fungi, and many marine animals. These organisms use light to attract mates, catch prey, or defend themselves. In the deep ocean, where sunlight cannot reach, glowing signals can help animals communicate and blend into the faint light above them.'
+        $graphics.DrawString($sample, $font, $brush, [Drawing.RectangleF]::new(132,500,1656,330))
+        Write-PreviewText $graphics 'https://en.wikipedia.org/wiki/Bioluminescence' 20 132 860 $Color
+        Write-PreviewText $graphics 'Layout sample / Original demo text / One article per page' 20 132 935 $Color
+        $bitmap.Save($Path, [Drawing.Imaging.ImageFormat]::Png)
+    } finally { $font.Dispose(); $brush.Dispose(); $graphics.Dispose(); $bitmap.Dispose() }
+}
+
 $previewDirectory = Join-Path $projectRoot 'dist/previews'
 New-Item -ItemType Directory -Force -Path $previewDirectory | Out-Null
 Save-WeatherIcons
+Save-WikiPreview (Join-Path $previewDirectory 'wiki-page-readable.png') '#999999'
+Save-WikiPreview (Join-Path $previewDirectory 'wiki-page-day.png') '#242424'
+Save-WikiPreview (Join-Path $previewDirectory 'wiki-page-night.png') '#0C0C0C'
 foreach ($agenda in @($false, $true)) {
     $assetRoot = if ($agenda) { Join-Path $projectRoot 'outlook-screensaver/images' } else { Join-Path $projectRoot 'images' }
     $name = if ($agenda) { 'sleep-clock-agenda' } else { 'sleep-clock' }

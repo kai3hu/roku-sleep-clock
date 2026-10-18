@@ -22,12 +22,23 @@ sub init()
     m.agendaLines = []
     m.agendaPage = 0
     m.pageTimer = m.top.FindNode("agendaPageTimer")
+    m.wikiGroup = m.top.FindNode("wiki")
+    m.wikiTask = m.top.FindNode("wikiTask")
+    m.rotationTimer = m.top.FindNode("rotationTimer")
+    m.wikiArticles = []
+    m.pendingWikiArticles = invalid
+    m.nextWikiIndex = 0
+    m.rotationPage = "agenda"
+    m.wikiAttemptDay = ""
+    m.wikiLoadedDay = ""
 
     m.tick.ObserveField("fire", "onTick")
     m.refresh.ObserveField("fire", "refreshData")
     m.calendarTask.ObserveField("agenda", "onAgendaChanged")
     m.weatherTask.ObserveField("result", "onWeatherChanged")
     m.pageTimer.ObserveField("fire", "nextAgendaPage")
+    m.rotationTimer.ObserveField("fire", "rotateContent")
+    m.wikiTask.ObserveField("result", "onWikiChanged")
 
     updateClock()
     loadCalendar()
@@ -35,6 +46,7 @@ sub init()
     m.tick.control = "start"
     m.refresh.control = "start"
     m.pageTimer.control = "start"
+    m.rotationTimer.control = "start"
 end sub
 
 sub onTick()
@@ -48,6 +60,8 @@ sub updateClock()
     minute = now.GetMinutes()
     m.clock.text = twoDigits(hour) + ":" + twoDigits(minute)
     applyDisplaySchedule(hour)
+    day = wikiDateKey(now)
+    if day <> m.wikiAttemptDay then loadWiki(day)
 end sub
 
 sub applyDisplaySchedule(localHour as integer)
@@ -81,6 +95,69 @@ end sub
 sub refreshData()
     loadCalendar()
     loadWeather()
+    now = CreateObject("roDateTime")
+    now.ToLocalTime()
+    day = wikiDateKey(now)
+    if day <> m.wikiLoadedDay then loadWiki(day)
+end sub
+
+sub loadWiki(day as string)
+    if m.wikiTask.state = "run" then return
+    m.wikiAttemptDay = day
+    m.wikiTask.day = day
+    m.wikiTask.control = "run"
+end sub
+
+sub onWikiChanged()
+    result = m.wikiTask.result
+    if result = invalid then return
+    if result.complete then m.wikiLoadedDay = result.day
+    if result.articles.Count() = 0 then return
+    if m.rotationPage = "wiki"
+        ' Keep the current article stable until its full minute has elapsed.
+        m.pendingWikiArticles = result.articles
+    else
+        setWikiArticles(result.articles)
+    end if
+end sub
+
+sub setWikiArticles(articles as object)
+    ' Preserve the next article when the same cached collection is re-emitted.
+    nextUrl = ""
+    if m.wikiArticles.Count() > 0 then nextUrl = m.wikiArticles[m.nextWikiIndex mod m.wikiArticles.Count()].url
+    m.wikiArticles = articles
+    m.nextWikiIndex = 0
+    for i = 0 to articles.Count() - 1
+        if articles[i].url = nextUrl then m.nextWikiIndex = i
+    end for
+end sub
+
+sub rotateContent()
+    if m.pendingWikiArticles <> invalid
+        setWikiArticles(m.pendingWikiArticles)
+        m.pendingWikiArticles = invalid
+    end if
+    phase = wikiNextPhase(m.rotationPage, m.nextWikiIndex, m.wikiArticles.Count())
+    m.rotationPage = phase.page
+    m.nextWikiIndex = phase.nextIndex
+    isAgenda = phase.page = "agenda"
+    m.heading.visible = isAgenda
+    m.agenda.visible = isAgenda
+    m.weatherGroup.visible = isAgenda
+    m.wikiGroup.visible = not isAgenda
+    if isAgenda
+        m.pageTimer.control = "start"
+    else
+        m.pageTimer.control = "stop"
+        article = m.wikiArticles[phase.index]
+        m.top.FindNode("wikiHeading").text = "DAILY WIKIPEDIA  /  " + (phase.index + 1).ToStr() + " OF " + m.wikiArticles.Count().ToStr() + "  /  FEATURED " + article.featuredDate
+        m.top.FindNode("wikiTitle").text = article.title
+        m.top.FindNode("wikiExtract").text = article.extract
+        m.top.FindNode("wikiUrl").text = article.url
+    end if
+    m.rotationTimer.control = "stop"
+    m.rotationTimer.duration = phase.duration
+    m.rotationTimer.control = "start"
 end sub
 
 sub loadWeather()

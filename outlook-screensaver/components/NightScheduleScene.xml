@@ -48,14 +48,34 @@
                     <Font role="font" uri="font:SystemFontFile" size="18" />
                 </Label>
             </Group>
+            <Group id="wiki" visible="false" translation="[12,190]">
+                <Label id="wikiHeading" width="1656" height="45" color="0x0C0C0CFF">
+                    <Font role="font" uri="font:SystemFontFile" size="28" />
+                </Label>
+                <Label id="wikiTitle" translation="[0,75]" width="1656" height="135" wrap="true" numLines="2" color="0x0C0C0CFF">
+                    <Font role="font" uri="font:SystemFontFile" size="52" />
+                </Label>
+                <Label id="wikiExtract" translation="[0,230]" width="1656" height="330" wrap="true" numLines="8" color="0x0C0C0CFF">
+                    <Font role="font" uri="font:SystemFontFile" size="32" />
+                </Label>
+                <Label id="wikiUrl" translation="[0,590]" width="1656" height="65" wrap="true" numLines="2" color="0x0C0C0CFF">
+                    <Font role="font" uri="font:SystemFontFile" size="20" />
+                </Label>
+                <Label translation="[0,665]" width="1656" height="35" text="Wikipedia contributors / Shortened excerpt / CC BY-SA 4.0: creativecommons.org/licenses/by-sa/4.0/" color="0x0C0C0CFF">
+                    <Font role="font" uri="font:SystemFontFile" size="20" />
+                </Label>
+            </Group>
         </Group>
         <Timer id="tick" duration="1" repeat="true" />
         <Timer id="refresh" duration="300" repeat="true" />
         <Timer id="agendaPageTimer" duration="20" repeat="true" />
+        <Timer id="rotationTimer" duration="180" repeat="false" />
         <CalendarTask id="calendarTask" />
         <WeatherTask id="weatherTask" />
+        <WikiTask id="wikiTask" />
     </children>
     <script type="text/brightscript" uri="pkg:/source/config.brs" />
     <script type="text/brightscript" uri="pkg:/components/DisplaySchedule.brs" />
+    <script type="text/brightscript" uri="pkg:/components/WikiContent.brs" />
     <script type="text/brightscript" uri="pkg:/components/NightScheduleScene.brs" />
 </component>

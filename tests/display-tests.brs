@@ -6,7 +6,10 @@ sub Main()
     bar = mockNode("Rectangle", [])
     icon = mockNode("Poster", [])
     weather = mockNode("Group", [bar, icon])
-    m.content = mockNode("Group", [clock, agenda, weather])
+    wikiTitle = mockNode("Label", [])
+    wiki = mockNode("Group", [wikiTitle])
+    wiki.visible = false
+    m.content = mockNode("Group", [clock, agenda, weather, wiki])
 
     applyDisplaySchedule(23)
     if clock.color <> "0x0C0C0CFF" or agenda.color <> clock.color or bar.color <> clock.color or icon.blendColor <> "0x555555FF"
@@ -18,12 +21,20 @@ sub Main()
         return
     end if
     applyDisplaySchedule(0)
+    if wikiTitle.color <> clock.color or wiki.visible
+        print "FAIL: Hidden article text must dim without changing page visibility"
+        return
+    end if
     applyDisplaySchedule(6)
     if clock.color <> "0x0C0C0CFF"
         print "FAIL: The overnight palette must survive midnight"
         return
     end if
     applyDisplaySchedule(7)
+    if wikiTitle.color <> "0x242424FF"
+        print "FAIL: Articles must follow daytime brightness"
+        return
+    end if
     if clock.color <> "0x242424FF" or bar.color <> clock.color or icon.blendColor <> "0xFFFFFFFF"
         print "FAIL: Morning must brighten every information type"
         return

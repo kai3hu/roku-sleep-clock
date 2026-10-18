@@ -35,7 +35,7 @@ Package: `dist/night-clock-roku.zip`
 ### Sleep Clock + Agenda
 
 - Displays the same large clock
-- Clock, agenda and weather remain visible at all hours
+- Clock remains visible at all hours; agenda/weather alternate with single Wikipedia articles
 - From 23:00 through 06:59, all text, charts and weather icons use an extra-dim palette (approximately `#0C0C0C`)
 - From 07:00 to 22:59, the palette increases to `#242424`
 - Automatically adjusts at the time boundary using the Roku device's local timezone; data continues refreshing every 5 minutes
@@ -47,6 +47,16 @@ Package: `dist/night-clock-roku.zip`
 - Shows 24 hourly temperature bars, the forecast low/high and 8 three-hourly temperature/icon samples
 - Requests calendar and weather updates every 5 minutes while running
 - Uses a private, read-only Outlook ICS link
+
+#### Daily Wikipedia rotation
+
+The cycle is **agenda and weather (3 minutes) > article 1 (1 minute) > agenda and weather (3 minutes) > article 2 (1 minute)**, continuing through five articles and returning to article 1. Each article page contains one English title, a shortened plain-text excerpt and its source link, without images. The clock stays in place and the existing day/night palette applies to every page. Agenda pagination pauses during article pages. Calendar and weather refreshes do not reset the rotation timer.
+
+The daily collection consists of the featured article for the Roku's local date and the four preceding dates, using the public [Wikifeeds featured endpoint](https://www.mediawiki.org/wiki/Wikifeeds#.../feed/featured/{yyyy}/{mm}/{dd}). These are five recent daily featured articles, not five articles all featured today. Each page displays its original featured date. The collection updates after local midnight; cached matching dates are reused. Failed or incomplete downloads retry on the normal five-minute refresh, while cached articles remain usable. If no articles are available, the agenda/weather page remains visible. Wikipedia requests run independently of calendar and weather requests.
+
+`dist/previews/wiki-page-readable.png`, `wiki-page-day.png` and `wiki-page-night.png` show the article layout with original sample text, not a live featured article. The readable preview is intentionally brighter than the TV palette.
+
+Only public article titles, excerpts, links and featured dates are stored in the Roku registry. No Outlook link or calendar event is sent to Wikipedia. Article excerpts are credited to Wikipedia contributors under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/); each page includes its source article and notes that its excerpt may be shortened. This is a general encyclopedia feed, not a child-safe or topic-filtered selection.
 
 Package: `dist/night-clock-outlook-roku.zip`
 

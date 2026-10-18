@@ -16,10 +16,20 @@ const suites = [
   {
     files: [
       'outlook-screensaver/components/DisplaySchedule.brs',
+      'outlook-screensaver/components/WikiContent.brs',
       'outlook-screensaver/components/NightScheduleScene.brs',
       'tests/display-tests.brs'
     ],
     success: /PASS: Text, chart and icon brightness transitions without hiding content/
+  },
+  {
+    files: [
+      'outlook-screensaver/components/DisplaySchedule.brs',
+      'outlook-screensaver/components/WikiContent.brs',
+      'outlook-screensaver/components/NightScheduleScene.brs',
+      'tests/wiki-tests.brs'
+    ],
+    success: /WIKI_TEST_FAILURES=\s*0/
   }
 ];
 
