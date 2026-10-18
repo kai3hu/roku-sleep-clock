@@ -2,7 +2,7 @@ param([int]$Page = 1)
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Drawing
 . (Join-Path $PSScriptRoot 'generate-previews.ps1')
-$html = (Invoke-WebRequest -UseBasicParsing -Uri 'https://t.me/s/DNSPODT').Content
+$html = (Invoke-WebRequest -UseBasicParsing -Uri 'https://t.me/s/DNSPODT' -TimeoutSec 15).Content
 $pattern = '<div[^>]*data-post="DNSPODT/([0-9]+)"[^>]*>'
 $markers = [regex]::Matches($html, $pattern)
 $posts = @()
@@ -10,7 +10,7 @@ for ($i = 0; $i -lt $markers.Count; $i++) {
     $start = $markers[$i].Index
     $end = if ($i+1 -lt $markers.Count) {$markers[$i+1].Index} else {$html.Length}
     $body = $html.Substring($start, $end-$start)
-    $textStart = [regex]::Match($body, '<div[^>]*class="[^"]*\btgme_widget_message_text\b[^"]*"[^>]*>')
+    $textStart = [regex]::Match($body, '<div[^>]*class="[^"]*\bjs-message_text\b[^"]*"[^>]*>')
     if (-not $textStart.Success) {continue}
     $remaining = $body.Substring($textStart.Index + $textStart.Length)
     $depth = 1
@@ -37,28 +37,49 @@ $brush = [Drawing.SolidBrush]::new([Drawing.ColorTranslator]::FromHtml('#999999'
 $format = [Drawing.StringFormat]::new([Drawing.StringFormat]::GenericTypographic)
 $format.FormatFlags = [Drawing.StringFormatFlags]::MeasureTrailingSpaces
 function Text-Width([string]$Text) {return $graphics.MeasureString($Text,$font,100000,$format).Width}
+function Wrap-Message([string]$Text, [int]$Width) {
+    $lines=[Collections.Generic.List[string]]::new()
+    $line=''
+    foreach($char in $Text.ToCharArray()) {
+        if((Text-Width ($line+$char)) -gt $Width -and $line) {
+            $splitAt=$line.LastIndexOf(' ')
+            $carry=[string]$char
+            if($splitAt -gt $line.Length/2) {$carry=$line.Substring($splitAt+1)+$char; $line=$line.Substring(0,$splitAt)}
+            $lines.Add($line.Trim()); $line=$carry.Trim()
+        } else {$line+=$char}
+    }
+    if($line.Trim()){$lines.Add($line.Trim())}
+    return ,$lines
+}
 try {
     $graphics.Clear([Drawing.Color]::Black)
     $graphics.TextRenderingHint=[Drawing.Text.TextRenderingHint]::AntiAliasGridFit
     Write-PreviewText $graphics '23:48' 110 120 80 '#999999'
     Write-PreviewText $graphics 'TELEGRAM  /  @DNSPODT  /  RECENT POSTS' 28 132 270 '#999999'
     $heights=@(0,0)
-    $lineHeight=[Math]::Max(32,[Math]::Ceiling($font.GetHeight($graphics))+2)
+    $lineHeight=[Math]::Max(42,[Math]::Ceiling($font.GetHeight($graphics))+2)
     $pages=[Collections.Generic.List[object]]::new()
     $cards=[Collections.Generic.List[object]]::new()
     $capacity=[Math]::Floor((620-60)/$lineHeight)
     for ($i=0;$i -lt $posts.Count;$i++) {
-        $lines=[Collections.Generic.List[string]]::new()
-        $line=''
-        foreach($char in $posts[$i].Text.ToCharArray()) {
-            if((Text-Width ($line+$char)) -gt 780 -and $line) {
-                $splitAt=$line.LastIndexOf(' ')
-                $carry=[string]$char
-                if($splitAt -gt $line.Length/2) {$carry=$line.Substring($splitAt+1)+$char; $line=$line.Substring(0,$splitAt)}
-                $lines.Add($line.Trim()); $line=$carry.Trim()
-            } else {$line+=$char}
+        $lines=Wrap-Message $posts[$i].Text 780
+        if($lines.Count -gt $capacity) {
+            if($cards.Count){$pages.Add($cards)}
+            $cards=[Collections.Generic.List[object]]::new()
+            $heights=@(0,0)
+            $wideLines=Wrap-Message $posts[$i].Text 1640
+            $offset=0
+            while($offset -lt $wideLines.Count) {
+                $count=[int][Math]::Min(($wideLines.Count-$offset),$capacity)
+                $part=@()
+                for($j=$offset;$j -lt $offset+$count;$j++){$part+=$wideLines[$j]}
+                $exclusive=[Collections.Generic.List[object]]::new()
+                $exclusive.Add(@{Post=$posts[$i];X=132;Y=345;Lines=$part;Continued=$offset -gt 0})
+                $pages.Add($exclusive)
+                $offset+=$count
+            }
+            continue
         }
-        if($line.Trim()){$lines.Add($line.Trim())}
         $offset=0
         while($offset -lt $lines.Count) {
             $column=if($heights[1] -lt $heights[0]){1}else{0}

@@ -17,7 +17,7 @@ const suites = [
   {
     files: [
       'outlook-screensaver/components/DisplaySchedule.brs',
-      'outlook-screensaver/components/WikiContent.brs',
+      'outlook-screensaver/components/SharedContent.brs',
       'outlook-screensaver/components/TelegramContent.brs',
       'outlook-screensaver/components/NightScheduleScene.brs',
       'tests/display-tests.brs'
@@ -27,20 +27,28 @@ const suites = [
   {
     files: [
       'outlook-screensaver/components/DisplaySchedule.brs',
-      'outlook-screensaver/components/WikiContent.brs',
+      'outlook-screensaver/components/SharedContent.brs',
       'outlook-screensaver/components/TelegramContent.brs',
       'outlook-screensaver/components/NightScheduleScene.brs',
-      'tests/wiki-tests.brs'
+      'tests/news-scene-tests.brs'
     ],
-    success: /WIKI_TEST_FAILURES=\s*0/
+    success: /NEWS_SCENE_TEST_FAILURES=\s*0/
   },
   {
     files: [
-      'outlook-screensaver/components/WikiContent.brs',
+      'outlook-screensaver/components/SharedContent.brs',
       'outlook-screensaver/components/TelegramContent.brs',
       'tests/telegram-tests.brs'
     ],
     success: /TELEGRAM_TEST_FAILURES=\s*0/
+  },
+  {
+    files: [
+      'outlook-screensaver/components/SharedContent.brs',
+      'outlook-screensaver/components/NewsContent.brs',
+      'tests/news-tests.brs'
+    ],
+    success: /NEWS_TEST_FAILURES=\s*0/
   }
 ];
 

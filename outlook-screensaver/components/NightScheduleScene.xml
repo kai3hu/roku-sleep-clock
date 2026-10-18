@@ -6,27 +6,30 @@
             <Label id="clock" width="600" height="150" color="0x0C0C0CFF">
                 <Font role="font" uri="font:SystemFontFile" size="110" />
             </Label>
-            <Label id="today" translation="[12,155]" width="900" height="45" text="TODAY  /  Loading calendar..." color="0x0C0C0CFF">
-                <Font role="font" uri="font:SystemFontFile" size="24" />
+            <Label id="today" translation="[12,155]" width="900" height="50" text="TODAY  /  Loading calendar..." color="0x0C0C0CFF">
+                <Font role="font" uri="font:SystemFontFile" size="30" />
+            </Label>
+            <Label id="todayBody" translation="[12,215]" width="900" height="330" wrap="true" numLines="7" color="0x0C0C0CFF">
+                <Font role="font" uri="font:SystemFontFile" size="34" />
             </Label>
             <Label
                 id="heading"
-                translation="[12,210]"
+                translation="[12,555]"
                 width="880"
                 height="55"
                 text="NEXT 7 DAYS"
                 color="0x0C0C0CFF">
-                <Font role="font" uri="font:SystemFontFile" size="30" />
+                <Font role="font" uri="font:SystemFontFile" size="26" />
             </Label>
             <Label
                 id="agenda"
-                translation="[12,270]"
+                translation="[12,610]"
                 width="900"
-                height="645"
+                height="305"
                 wrap="true"
-                numLines="14"
+                numLines="8"
                 color="0x0C0C0CFF">
-                <Font role="font" uri="font:SystemFontFile" size="28" />
+                <Font role="font" uri="font:SystemFontFile" size="24" />
             </Label>
             <Group id="weather" translation="[1000,10]">
                 <Label width="550" height="45" text="TUSCALOOSA 35406" color="0x0C0C0CFF">
@@ -51,20 +54,20 @@
                     <Font role="font" uri="font:SystemFontFile" size="18" />
                 </Label>
             </Group>
-            <Group id="wiki" visible="false" translation="[12,190]">
-                <Label id="wikiHeading" width="1656" height="45" color="0x0C0C0CFF">
+            <Group id="news" visible="false" translation="[12,190]">
+                <Label id="newsHeading" width="1656" height="45" color="0x0C0C0CFF">
                     <Font role="font" uri="font:SystemFontFile" size="28" />
                 </Label>
-                <Label id="wikiTitle" translation="[0,75]" width="1656" height="135" wrap="true" numLines="2" color="0x0C0C0CFF">
+                <Label id="newsTitle" translation="[0,75]" width="1656" height="135" wrap="true" numLines="2" color="0x0C0C0CFF">
                     <Font role="font" uri="font:SystemFontFile" size="52" />
                 </Label>
-                <Label id="wikiExtract" translation="[0,230]" width="1656" height="330" wrap="true" numLines="8" color="0x0C0C0CFF">
+                <Label id="newsSummary" translation="[0,230]" width="1656" height="330" wrap="true" numLines="8" color="0x0C0C0CFF">
                     <Font role="font" uri="font:SystemFontFile" size="32" />
                 </Label>
-                <Label id="wikiUrl" translation="[0,590]" width="1656" height="65" wrap="true" numLines="2" color="0x0C0C0CFF">
+                <Label id="newsUrl" translation="[0,590]" width="1656" height="65" wrap="true" numLines="2" color="0x0C0C0CFF">
                     <Font role="font" uri="font:SystemFontFile" size="20" />
                 </Label>
-                <Label translation="[0,665]" width="1656" height="35" text="Wikipedia contributors / Shortened excerpt / CC BY-SA 4.0: creativecommons.org/licenses/by-sa/4.0/" color="0x0C0C0CFF">
+                <Label translation="[0,665]" width="1656" height="35" text="Kagi News / AI-generated summary, shortened / CC BY-NC 4.0: creativecommons.org/licenses/by-nc/4.0/" color="0x0C0C0CFF">
                     <Font role="font" uri="font:SystemFontFile" size="20" />
                 </Label>
             </Group>
@@ -84,12 +87,12 @@
         <Timer id="rotationTimer" duration="120" repeat="false" />
         <CalendarTask id="calendarTask" />
         <WeatherTask id="weatherTask" />
-        <WikiTask id="wikiTask" />
+        <NewsTask id="newsTask" />
         <TelegramTask id="telegramTask" />
     </children>
     <script type="text/brightscript" uri="pkg:/source/config.brs" />
     <script type="text/brightscript" uri="pkg:/components/DisplaySchedule.brs" />
-    <script type="text/brightscript" uri="pkg:/components/WikiContent.brs" />
+    <script type="text/brightscript" uri="pkg:/components/SharedContent.brs" />
     <script type="text/brightscript" uri="pkg:/components/TelegramContent.brs" />
     <script type="text/brightscript" uri="pkg:/components/NightScheduleScene.brs" />
 </component>

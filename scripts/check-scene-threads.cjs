@@ -11,7 +11,9 @@ for (const file of fs.readdirSync(directory).filter(file => file.endsWith('.xml'
   const xml = fs.readFileSync(path.join(directory, file), 'utf8');
   const task = /extends="Task"/i.test(xml);
   for (const match of xml.matchAll(/<script[^>]+uri="pkg:\/([^"]+)"/gi)) {
-    const source = fs.readFileSync(path.join(root, match[1]), 'utf8');
+    const scriptPath = path.join(root, match[1]);
+    if (match[1] === 'source/config.brs' && !fs.existsSync(scriptPath)) continue;
+    const source = fs.readFileSync(scriptPath, 'utf8');
     const checked = task ? (source.match(/sub\s+init\s*\([^)]*\)([\s\S]*?)end\s+sub/i)?.[1] || '') : source;
     assert(!forbidden.test(checked), `Forbidden native component on RENDER: ${match[1]}`);
   }

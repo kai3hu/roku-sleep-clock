@@ -15,17 +15,25 @@ sub Main()
     check(posts[0].text = "Post 8 nested", "Nested content is preserved")
     check(posts[0].url = "https://t.me/DNSPODT/8", "Source URLs are constructed from the selected channel")
     check(telegramParsePosts(html, "OtherChannel").Count() = 0, "Wrong-channel messages are ignored")
+    reply = "<a class=" + q + "tgme_widget_message_reply" + q + "><div class=" + q + "tgme_widget_message_text js-message_reply_text" + q + ">Quoted old message</div></a>"
+    fixture = telegramFixture(10, "Own complete message")
+    bodyAt = fixture.Instr("<div class=" + q + "tgme_widget_message_text")
+    fixture = left(fixture, bodyAt) + reply + mid(fixture, bodyAt + 1)
+    replyPosts = telegramParsePosts(fixture, "DNSPODT")
+    check(replyPosts.Count() = 1 and replyPosts[0].text = "Own complete message", "Reply previews are excluded without losing the actual reply")
+    check(telegramParsePosts(fixture.Replace("Own complete message", ""), "DNSPODT").Count() = 0, "Quote-only wrappers are not mistaken for new messages")
+    check(telegramPlainText("<blockquote>Own quoted reporting</blockquote>") = "Own quoted reporting", "Blockquotes belonging to the actual post remain intact")
     phase = {page:"agenda", nextIndex:0}
     for i = 0 to 9
         phase = screensaverNextPhase(phase.page, phase.nextIndex, 5, true)
-        check(phase.page = "wiki" and phase.duration = 60 and phase.index = i mod 5, "Wiki sequence remains in order")
+        check(phase.page = "news" and phase.duration = 60 and phase.index = i mod 5, "News sequence remains in order")
         phase = screensaverNextPhase(phase.page, phase.nextIndex, 5, true)
-        check(phase.page = "telegram" and phase.duration = 60, "Telegram follows each wiki for one minute")
+        check(phase.page = "telegram" and phase.duration = 60, "Telegram follows each news story for one minute")
         phase = screensaverNextPhase(phase.page, phase.nextIndex, 5, true)
         check(phase.page = "agenda" and phase.duration = 120, "Agenda returns for two minutes")
     end for
-    check(screensaverNextPhase("wiki", 1, 5, false).page = "agenda", "Unavailable Telegram skips its page")
-    check(screensaverNextPhase("agenda", 0, 0, true).page = "telegram", "Telegram works when Wiki is unavailable")
+    check(screensaverNextPhase("news", 1, 5, false).page = "agenda", "Unavailable Telegram skips its page")
+    check(screensaverNextPhase("agenda", 0, 0, true).page = "telegram", "Telegram works when news is unavailable")
     check(screensaverNextPhase("agenda", 0, 0, false).duration = 120, "No feeds keeps the agenda visible")
     posts = []
     sizes = [10, 700, 45, 80, 600, 20]
@@ -49,7 +57,7 @@ sub Main()
             ends[column] = card.y + card.height + 35
             total = total + len(card.text.Replace(chr(10), ""))
             for each line in card.text.Split(chr(10))
-                check(telegramTextWidth(line, font) <= 780, "Every measured line fits its column")
+                check(telegramTextWidth(line, font) <= card.width - 10, "Every measured line fits its allocated width")
             end for
         end for
     end for
@@ -63,10 +71,13 @@ sub Main()
     total = 0
     for each page in pages
         for each card in page
+            check(card.width = 1650 and page.Count() = 1, "Long messages receive exclusive full-width pages")
             total = total + len(card.text.Replace(chr(10), ""))
         end for
     end for
     check(total = 900, "Every wide character survives continuation pagination")
+    onePage = telegramBuildPages([{text:wide + wide}], invalid)
+    check(onePage.Count() = 1 and onePage[0][0].width = 1650, "A post too long for a column can fit whole on one full-width page")
     check(telegramBuildPages([], font).Count() = 0, "Empty data produces no placeholder cards")
     print "TELEGRAM_TEST_FAILURES="; m.failures
 end sub

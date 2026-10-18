@@ -35,13 +35,13 @@ Package: `dist/night-clock-roku.zip`
 ### Sleep Clock + Agenda
 
 - Displays the same large clock
-- Clock remains visible at all hours; agenda/weather alternate with single Wikipedia articles
+- Clock remains visible at all hours; agenda/weather alternate with Kagi News and Telegram pages
 - From 23:00 through 06:59, all text, charts and weather icons use an extra-dim palette (approximately `#0C0C0C`)
 - From 07:00 to 22:59, the palette increases to `#242424`
 - Automatically adjusts at the time boundary using the Roku device's local timezone; data continues refreshing every 5 minutes
 - Displays events overlapping the rolling next 7 days, sorted by start time and labeled with weekday, date and local time
-- Adds a single-line TODAY summary with the day's event count and first unfinished event (or the first event if all are finished)
-- Automatically pages every 20 seconds when there are more than 12 events; the layout stays in a fixed position
+- Gives TODAY a dedicated 330-pixel-tall area with 34-point event text (38 on sparse days), above a compact 24-point weekly agenda
+- Pages TODAY independently in groups of three events and the weekly agenda in groups of six, every 20 seconds; the layout stays fixed
 - Refreshes the calendar every 5 minutes while the screensaver is running
 - Keeps the clock and agenda in a fixed position
 - Displays current temperature plus the next 24 hourly Celsius forecasts for Tuscaloosa, AL 35406
@@ -49,30 +49,38 @@ Package: `dist/night-clock-roku.zip`
 - Requests calendar and weather updates every 5 minutes while running
 - Uses a private, read-only Outlook ICS link
 
-#### Daily Wikipedia rotation
+#### Kagi News rotation
 
-The cycle is **agenda and weather (2 minutes) > article 1 (1 minute) > Telegram (1 minute) > agenda and weather (2 minutes) > article 2 (1 minute) > Telegram (1 minute)**, continuing through five articles and returning to article 1. Each article page contains one English title, a shortened plain-text excerpt and its source link, without images. The clock stays in place and the existing day/night palette applies to every page. Agenda pagination pauses during article and Telegram pages. Data refreshes do not reset the rotation timer.
+The cycle is **agenda and weather (2 minutes) > news story 1 (1 minute) > Telegram (1 minute) > agenda and weather (2 minutes) > news story 2 (1 minute) > Telegram (1 minute)**. The clock stays visible and the existing day/night palette applies to every page. Data refreshes do not reset the rotation timer.
 
-The daily collection consists of the featured article for the Roku's local date and the four preceding dates, using the public [Wikifeeds featured endpoint](https://www.mediawiki.org/wiki/Wikifeeds#.../feed/featured/{yyyy}/{mm}/{dd}). These are five recent daily featured articles, not five articles all featured today. Each page displays its original featured date. The collection updates after local midnight; cached matching dates are reused. Failed or incomplete downloads retry on the normal five-minute refresh, while cached articles remain usable. If no articles are available, the agenda/weather page remains visible. Wikipedia requests run independently of calendar and weather requests.
+News comes only from Kagi's public English Technology (`tech.json`), Science (`science.json`) and Economy (`economy.json`) feeds. Up to three stories per category are interleaved by topic, avoiding repeated headlines or source articles. General World and Politics feeds are not requested. A small headline-keyword heuristic lowers the priority of politics-heavy stories within the selected categories; it is best-effort preference matching, not a guarantee that economic or technical coverage will never mention politics.
 
-`dist/previews/wiki-page-readable.png`, `wiki-page-day.png` and `wiki-page-night.png` show the article layout with original sample text, not a live featured article. The readable preview is intentionally brighter than the TV palette.
+Each page contains a headline, a shortened English AI-generated summary, the feed's edition date and an original publisher link. No images, videos or user interaction are used. Network requests and JSON parsing run in a Task independently of Outlook, weather and Telegram. The app checks for updates every five minutes; [Kagi publishes daily editions around noon UTC](https://help.kagi.com/kagi/news/index.html), so polling does not imply new stories every five minutes. Failed categories reuse their last cached stories, with a delayed-data notice and their original edition date. Without usable news, that interval is skipped.
 
-Only public article titles, excerpts, links and featured dates are stored in the Roku registry. No Outlook link or calendar event is sent to Wikipedia. Article excerpts are credited to Wikipedia contributors under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/); each page includes its source article and notes that its excerpt may be shortened. This is a general encyclopedia feed, not a child-safe or topic-filtered selection.
+Only public news metadata is stored in the Roku registry. No Outlook information is sent to Kagi. [Kagi's data license](https://github.com/kagisearch/kite-public#install--run-kagi-news-front-end) is [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/): attribution and non-commercial use only. This personal screensaver credits Kagi News on each page and notes that summaries are AI-generated and shortened. Verify important reporting at the linked publisher. The app source's availability does not relicense Kagi's data for commercial use.
+
+`dist/previews/news-page-readable.png`, `news-page-day.png` and `news-page-night.png` use original layout-demo copy, not live reporting. The readable preview is intentionally brighter than the TV palette.
+
+For an optional live parser check, download the three feed files to `.tools/kagi-tech.json`, `.tools/kagi-science.json` and `.tools/kagi-economy.json`, then run:
+
+```sh
+node .tools/node_modules/brs/bin/cli.js outlook-screensaver/components/SharedContent.brs outlook-screensaver/components/NewsContent.brs tests/news-live-tests.brs
+```
 
 #### Telegram channel
 
 Font registration, text measurement and pagination run only inside the Telegram Task worker. The render thread starts the clock immediately and consumes completed page data; it does not create `roFontRegistry` or perform long text layout. If font metrics are unavailable, the worker uses conservative widths rather than dereferencing an invalid component. `npm test` includes a render-thread startup guard because desktop BrightScript interpreters do not enforce all Roku thread restrictions.
 
-The screensaver reads the public preview of [@DNSPODT](https://t.me/s/DNSPODT), independently of Outlook and Wikipedia, at startup and every five minutes. No Telegram account, phone number, login code or bot token is used. This is a public feed reader; it does not join the channel on your account. The public HTML preview is not a stable API and may stop working if Telegram changes its markup or restricts access. Private channels are not supported.
+The screensaver reads the public preview of [@DNSPODT](https://t.me/s/DNSPODT), independently of Outlook and Kagi News, at startup and every five minutes. No Telegram account, phone number, login code or bot token is used. This is a public feed reader; it does not join the channel on your account. The public HTML preview is not a stable API and may stop working if Telegram changes its markup or restricts access. Private channels are not supported.
 
-The latest six posts with visible text or captions are placed in two measured, variable-height columns. Short messages share a page; complete messages are kept together when they fit. Long messages continue into the next column or onto continuation pages, without inserted ellipses or text truncation. Each Telegram visit shows one page for one minute, and the next visit resumes the next page. Updates are held until the current collection's pages finish, so no refresh interrupts a long message. Reading the collection again then uses the latest downloaded posts. Message text stays in its original language; interface labels remain English. Media-only posts, photos, videos, reactions and avatars are not displayed. Message timestamps use the Roku local timezone, and source post links are shown as text, not interactive controls.
+The latest six posts with visible text or captions are placed in measured, variable-height columns. Only each post's own `js-message_text` body is selected: Telegram reply previews (`js-message_reply_text`) are excluded, while blockquotes that belong to the actual post are retained. Short messages share a page and stay complete. A post too long for a column receives an exclusive full-width page; exceptionally long posts use dedicated full-width continuation pages. No inserted ellipses or text truncation are used. Conservative CJK line-height headroom prevents the final lines from being clipped. Each Telegram visit shows one page for one minute, and the next visit resumes the next page. Updates are held until the current collection's pages finish, so no refresh interrupts a long message. Reading the collection again then uses the latest downloaded posts. Message text stays in its original language; interface labels remain English. Media-only posts, photos, videos, reactions and avatars are not displayed. Message timestamps use the Roku local timezone, and source post links are shown as text, not interactive controls.
 
-Telegram posts are kept only in memory. Failed downloads retain the last usable collection with an `Update delayed` notice on its next display; without usable posts, the Telegram interval is skipped. If Wiki is unavailable but Telegram is usable, Telegram can still follow the agenda. The bundled Noto Sans SC font supplies Chinese glyphs; unsupported glyphs such as some emoji use blank fallback. See `outlook-screensaver/fonts` for the font's source, hash and license. No Outlook information is sent to Telegram, and no live message content is committed to Git.
+Telegram posts are kept only in memory. Failed downloads retain the last usable collection with an `Update delayed` notice on its next display; without usable posts, the Telegram interval is skipped. If news is unavailable but Telegram is usable, Telegram can still follow the agenda. The bundled Noto Sans SC font supplies Chinese glyphs; unsupported glyphs such as some emoji use blank fallback. See `outlook-screensaver/fonts` for the font's source, hash and license. No Outlook information is sent to Telegram, and no live message content is committed to Git.
 
 For an optional live parser check, download `https://t.me/s/DNSPODT` to `.tools/telegram-feed.html`, then run:
 
 ```sh
-node .tools/node_modules/brs/bin/cli.js outlook-screensaver/components/WikiContent.brs outlook-screensaver/components/TelegramContent.brs tests/telegram-live-tests.brs
+node .tools/node_modules/brs/bin/cli.js outlook-screensaver/components/SharedContent.brs outlook-screensaver/components/TelegramContent.brs tests/telegram-live-tests.brs
 ```
 
 `./generate-telegram-preview.ps1 -Page 1` generates a readable live-message layout preview in `dist/previews`; select a subsequent page with `-Page 2`. This optional script requires network access and uses a Windows CJK font for simulation, not a Roku capture. The normal package build does not download Telegram messages.

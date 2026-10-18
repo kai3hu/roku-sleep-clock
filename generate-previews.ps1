@@ -77,13 +77,16 @@ function Save-ScreenPreview {
         $graphics.TextRenderingHint = [Drawing.Text.TextRenderingHint]::AntiAliasGridFit
         if ($Agenda) {
             Write-PreviewText $graphics '23:48' 110 120 80 $Color
-            Write-PreviewText $graphics 'TODAY  /  2 events  /  09:00 Team meeting' 24 132 235 $Color
-            Write-PreviewText $graphics 'NEXT 7 DAYS' 30 132 290 $Color
-            Write-PreviewText $graphics 'Mon 10/19   09:00   Team meeting' 28 132 350 $Color
-            Write-PreviewText $graphics 'Tue 10/20   13:30   Project review' 28 132 400 $Color
-            Write-PreviewText $graphics 'Wed 10/21   18:00   Dinner' 28 132 450 $Color
-            Write-PreviewText $graphics 'Thu 10/22   10:00   Planning' 28 132 500 $Color
-            Write-PreviewText $graphics 'Fri 10/23   14:00   Weekly review' 28 132 550 $Color
+            Write-PreviewText $graphics 'TODAY  /  3 events' 30 132 235 $Color
+            Write-PreviewText $graphics '09:00   Team meeting' 34 132 295 $Color
+            Write-PreviewText $graphics '13:30   Project review' 34 132 350 $Color
+            Write-PreviewText $graphics '18:00   Dinner with friends' 34 132 405 $Color
+            Write-PreviewText $graphics 'NEXT 7 DAYS' 26 132 635 $Color
+            Write-PreviewText $graphics 'Mon 10/19   09:00   Team meeting' 24 132 690 $Color
+            Write-PreviewText $graphics 'Tue 10/20   13:30   Project review' 24 132 730 $Color
+            Write-PreviewText $graphics 'Wed 10/21   18:00   Dinner' 24 132 770 $Color
+            Write-PreviewText $graphics 'Thu 10/22   10:00   Planning' 24 132 810 $Color
+            Write-PreviewText $graphics 'Fri 10/23   14:00   Weekly review' 24 132 850 $Color
             Write-PreviewText $graphics 'TUSCALOOSA 35406' 28 1120 90 $Color
             $weatherState=$graphics.Save()
             $graphics.TranslateTransform(1120,145)
@@ -155,7 +158,7 @@ function Save-MenuThumbnail {
     } finally { $graphics.Dispose(); $bitmap.Dispose() }
 }
 
-function Save-WikiPreview {
+function Save-NewsPreview {
     param([string]$Path, [string]$Color)
     $bitmap = [Drawing.Bitmap]::new(1920, 1080)
     $graphics = [Drawing.Graphics]::FromImage($bitmap)
@@ -165,13 +168,13 @@ function Save-WikiPreview {
         $graphics.Clear([Drawing.Color]::Black)
         $graphics.TextRenderingHint = [Drawing.Text.TextRenderingHint]::AntiAliasGridFit
         Write-PreviewText $graphics '23:48' 110 120 80 $Color
-        Write-PreviewText $graphics 'DAILY WIKIPEDIA  /  1 OF 5  /  FEATURED 2026-10-18' 28 132 270 $Color
-        Write-PreviewText $graphics 'Bioluminescence' 52 132 345 $Color
-        # Original sample text, not a downloaded Wikipedia excerpt.
-        $sample = 'Bioluminescence is the production of light by living organisms through a chemical reaction. It occurs in fireflies, fungi, and many marine animals. These organisms use light to attract mates, catch prey, or defend themselves. In the deep ocean, where sunlight cannot reach, glowing signals can help animals communicate and blend into the faint light above them.'
+        Write-PreviewText $graphics 'KAGI NEWS  /  TECHNOLOGY  /  LAYOUT SAMPLE' 28 132 270 $Color
+        Write-PreviewText $graphics 'Technology, science and the economy' 52 132 345 $Color
+        # Original sample copy, not a live headline or downloaded news summary.
+        $sample = 'One story at a time, selected from Technology, Science and Economy. Each page shows a headline, a short English summary, the edition date and a source link. Topics alternate through the collection. General world and politics feeds are excluded, and politics-heavy headlines receive lower priority within the selected categories.'
         $graphics.DrawString($sample, $font, $brush, [Drawing.RectangleF]::new(132,500,1656,330))
-        Write-PreviewText $graphics 'https://en.wikipedia.org/wiki/Bioluminescence' 20 132 860 $Color
-        Write-PreviewText $graphics 'Layout sample / Original demo text / One article per page' 20 132 935 $Color
+        Write-PreviewText $graphics 'https://news.kagi.com/' 20 132 860 $Color
+        Write-PreviewText $graphics 'Layout sample / Original demo text / Live content credited to Kagi News (CC BY-NC 4.0)' 20 132 935 $Color
         $bitmap.Save($Path, [Drawing.Imaging.ImageFormat]::Png)
     } finally { $font.Dispose(); $brush.Dispose(); $graphics.Dispose(); $bitmap.Dispose() }
 }
@@ -179,9 +182,10 @@ function Save-WikiPreview {
 $previewDirectory = Join-Path $projectRoot 'dist/previews'
 New-Item -ItemType Directory -Force -Path $previewDirectory | Out-Null
 Save-WeatherIcons
-Save-WikiPreview (Join-Path $previewDirectory 'wiki-page-readable.png') '#999999'
-Save-WikiPreview (Join-Path $previewDirectory 'wiki-page-day.png') '#242424'
-Save-WikiPreview (Join-Path $previewDirectory 'wiki-page-night.png') '#0C0C0C'
+Save-NewsPreview (Join-Path $previewDirectory 'news-page-readable.png') '#999999'
+Save-NewsPreview (Join-Path $previewDirectory 'news-page-day.png') '#242424'
+Save-NewsPreview (Join-Path $previewDirectory 'news-page-night.png') '#0C0C0C'
+Save-ScreenPreview (Join-Path $projectRoot 'docs/agenda-preview.png') $true '#999999'
 foreach ($agenda in @($false, $true)) {
     $assetRoot = if ($agenda) { Join-Path $projectRoot 'outlook-screensaver/images' } else { Join-Path $projectRoot 'images' }
     $name = if ($agenda) { 'sleep-clock-agenda' } else { 'sleep-clock' }

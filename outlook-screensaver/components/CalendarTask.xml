@@ -3,7 +3,8 @@
     <interface>
         <field id="uri" type="string" />
         <field id="agenda" type="string" />
-        <field id="today" type="string" />
+        <field id="today" type="string" alwaysNotify="true" />
+        <field id="todayItems" type="array" alwaysNotify="true" />
     </interface>
     <script type="text/brightscript" uri="pkg:/components/CalendarParser.brs" />
     <script type="text/brightscript" uri="pkg:/components/CalendarTask.brs" />

@@ -6,14 +6,14 @@ sub Main()
     bar = mockNode("Rectangle", [])
     icon = mockNode("Poster", [])
     weather = mockNode("Group", [bar, icon])
-    wikiTitle = mockNode("Label", [])
-    wiki = mockNode("Group", [wikiTitle])
-    wiki.visible = false
+    newsTitle = mockNode("Label", [])
+    news = mockNode("Group", [newsTitle])
+    news.visible = false
     telegramText = mockNode("Label", [])
     telegram = mockNode("Group", [telegramText])
     telegram.visible = false
     today = mockNode("Label", [])
-    m.content = mockNode("Group", [clock, today, agenda, weather, wiki, telegram])
+    m.content = mockNode("Group", [clock, today, agenda, weather, news, telegram])
 
     applyDisplaySchedule(23)
     if clock.color <> "0x0C0C0CFF" or agenda.color <> clock.color or bar.color <> clock.color or icon.blendColor <> "0x555555FF"
@@ -29,7 +29,7 @@ sub Main()
         print "FAIL: Telegram and today summary must follow the night palette"
         return
     end if
-    if wikiTitle.color <> clock.color or wiki.visible
+    if newsTitle.color <> clock.color or news.visible
         print "FAIL: Hidden article text must dim without changing page visibility"
         return
     end if
@@ -39,7 +39,7 @@ sub Main()
         return
     end if
     applyDisplaySchedule(7)
-    if wikiTitle.color <> "0x242424FF"
+    if newsTitle.color <> "0x242424FF"
         print "FAIL: Articles must follow daytime brightness"
         return
     end if

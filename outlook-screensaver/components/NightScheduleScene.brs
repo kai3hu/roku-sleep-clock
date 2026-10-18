@@ -6,6 +6,9 @@ sub init()
     m.agenda = m.top.FindNode("agenda")
     m.heading = m.top.FindNode("heading")
     m.today = m.top.FindNode("today")
+    m.todayBody = m.top.FindNode("todayBody")
+    m.todayItems = []
+    m.todayPage = 0
     m.weatherGroup = m.top.FindNode("weather")
     m.displayColor = ""
     m.iconTint = ""
@@ -23,15 +26,14 @@ sub init()
     m.agendaLines = []
     m.agendaPage = 0
     m.pageTimer = m.top.FindNode("agendaPageTimer")
-    m.wikiGroup = m.top.FindNode("wiki")
-    m.wikiTask = m.top.FindNode("wikiTask")
+    m.newsGroup = m.top.FindNode("news")
+    m.newsTask = m.top.FindNode("newsTask")
     m.rotationTimer = m.top.FindNode("rotationTimer")
-    m.wikiArticles = []
-    m.pendingWikiArticles = invalid
-    m.nextWikiIndex = 0
+    m.newsStories = []
+    m.pendingNewsStories = invalid
+    m.nextNewsIndex = 0
     m.rotationPage = "agenda"
-    m.wikiAttemptDay = ""
-    m.wikiLoadedDay = ""
+    m.newsDelayed = false
     m.telegramGroup = m.top.FindNode("telegram")
     m.telegramGrid = m.top.FindNode("telegramGrid")
     m.telegramTask = m.top.FindNode("telegramTask")
@@ -47,16 +49,18 @@ sub init()
     m.refresh.ObserveField("fire", "refreshData")
     m.calendarTask.ObserveField("agenda", "onAgendaChanged")
     m.calendarTask.ObserveField("today", "onTodayChanged")
+    m.calendarTask.ObserveField("todayItems", "onTodayItemsChanged")
     m.weatherTask.ObserveField("result", "onWeatherChanged")
     m.pageTimer.ObserveField("fire", "nextAgendaPage")
     m.rotationTimer.ObserveField("fire", "rotateContent")
-    m.wikiTask.ObserveField("result", "onWikiChanged")
+    m.newsTask.ObserveField("result", "onNewsChanged")
     m.telegramTask.ObserveField("result", "onTelegramChanged")
 
     updateClock()
     loadCalendar()
     loadWeather()
     loadTelegram()
+    loadNews()
     m.tick.control = "start"
     m.refresh.control = "start"
     m.pageTimer.control = "start"
@@ -74,8 +78,6 @@ sub updateClock()
     minute = now.GetMinutes()
     m.clock.text = twoDigits(hour) + ":" + twoDigits(minute)
     applyDisplaySchedule(hour)
-    day = wikiDateKey(now)
-    if day <> m.wikiAttemptDay then loadWiki(day)
 end sub
 
 sub applyDisplaySchedule(localHour as integer)
@@ -100,6 +102,7 @@ sub loadCalendar()
     if url = ""
         m.agenda.text = "Add your Outlook ICS link in source/config.brs"
         m.today.text = "TODAY  /  Calendar not configured"
+        m.todayBody.text = "Add your Outlook calendar to see today's schedule."
         return
     end if
     if m.calendarTask.state = "run" then return
@@ -111,10 +114,7 @@ sub refreshData()
     loadCalendar()
     loadWeather()
     loadTelegram()
-    now = CreateObject("roDateTime")
-    now.ToLocalTime()
-    day = wikiDateKey(now)
-    if day <> m.wikiLoadedDay then loadWiki(day)
+    loadNews()
 end sub
 
 sub loadTelegram()
@@ -151,9 +151,9 @@ sub renderTelegramPage()
         post = card.post
         metaText = telegramLocalTime(post.timestamp) + "  /  t.me/" + telegramChannel() + "/" + post.id.ToStr()
         if card.continued then metaText = metaText + "  /  Continued"
-        meta = createWeatherLabel(m.telegramGrid, metaText, 20, 790, 30)
+        meta = createWeatherLabel(m.telegramGrid, metaText, 20, card.width, 30)
         meta.translation = [card.x, card.y]
-        body = createWeatherLabel(m.telegramGrid, card.text, 26, 790, card.height)
+        body = createWeatherLabel(m.telegramGrid, card.text, 26, card.width, card.height)
         body.translation = [card.x, card.y + 35]
         body.wrap = true
         body.numLines = card.lines
@@ -166,61 +166,63 @@ sub renderTelegramPage()
     m.telegramPageIndex = m.telegramPageIndex + 1
 end sub
 
-sub loadWiki(day as string)
-    if m.wikiTask.state = "run" then return
-    m.wikiAttemptDay = day
-    m.wikiTask.day = day
-    m.wikiTask.control = "run"
+sub loadNews()
+    if m.newsTask.state = "run" then return
+    m.newsTask.control = "run"
 end sub
 
-sub onWikiChanged()
-    result = m.wikiTask.result
+sub onNewsChanged()
+    result = m.newsTask.result
     if result = invalid then return
-    if result.complete then m.wikiLoadedDay = result.day
-    if result.articles.Count() = 0 then return
-    if m.rotationPage = "wiki"
+    m.newsDelayed = result.delayed
+    if type(result.stories) <> "roArray" then return
+    if result.stories.Count() = 0 then return
+    if m.rotationPage = "news"
         ' Keep the current article stable until its full minute has elapsed.
-        m.pendingWikiArticles = result.articles
+        m.pendingNewsStories = result.stories
     else
-        setWikiArticles(result.articles)
+        setNewsStories(result.stories)
     end if
 end sub
 
-sub setWikiArticles(articles as object)
+sub setNewsStories(articles as object)
     ' Preserve the next article when the same cached collection is re-emitted.
     nextUrl = ""
-    if m.wikiArticles.Count() > 0 then nextUrl = m.wikiArticles[m.nextWikiIndex mod m.wikiArticles.Count()].url
-    m.wikiArticles = articles
-    m.nextWikiIndex = 0
+    if m.newsStories.Count() > 0 then nextUrl = m.newsStories[m.nextNewsIndex mod m.newsStories.Count()].url
+    m.newsStories = articles
+    m.nextNewsIndex = 0
     for i = 0 to articles.Count() - 1
-        if articles[i].url = nextUrl then m.nextWikiIndex = i
+        if articles[i].url = nextUrl then m.nextNewsIndex = i
     end for
 end sub
 
 sub rotateContent()
-    if m.pendingWikiArticles <> invalid
-        setWikiArticles(m.pendingWikiArticles)
-        m.pendingWikiArticles = invalid
+    if m.pendingNewsStories <> invalid
+        setNewsStories(m.pendingNewsStories)
+        m.pendingNewsStories = invalid
     end if
-    phase = screensaverNextPhase(m.rotationPage, m.nextWikiIndex, m.wikiArticles.Count(), m.telegramPosts.Count() > 0)
+    phase = screensaverNextPhase(m.rotationPage, m.nextNewsIndex, m.newsStories.Count(), m.telegramPosts.Count() > 0)
     m.rotationPage = phase.page
-    m.nextWikiIndex = phase.nextIndex
+    m.nextNewsIndex = phase.nextIndex
     isAgenda = phase.page = "agenda"
     m.heading.visible = isAgenda
     m.today.visible = isAgenda
+    m.todayBody.visible = isAgenda
     m.agenda.visible = isAgenda
     m.weatherGroup.visible = isAgenda
-    m.wikiGroup.visible = phase.page = "wiki"
+    m.newsGroup.visible = phase.page = "news"
     m.telegramGroup.visible = phase.page = "telegram"
     if isAgenda
         m.pageTimer.control = "start"
-    else if phase.page = "wiki"
+    else if phase.page = "news"
         m.pageTimer.control = "stop"
-        article = m.wikiArticles[phase.index]
-        m.top.FindNode("wikiHeading").text = "DAILY WIKIPEDIA  /  " + (phase.index + 1).ToStr() + " OF " + m.wikiArticles.Count().ToStr() + "  /  FEATURED " + article.featuredDate
-        m.top.FindNode("wikiTitle").text = article.title
-        m.top.FindNode("wikiExtract").text = article.extract
-        m.top.FindNode("wikiUrl").text = article.url
+        article = m.newsStories[phase.index]
+        heading = "KAGI NEWS  /  " + ucase(article.category) + "  /  " + (phase.index + 1).ToStr() + " OF " + m.newsStories.Count().ToStr() + "  /  " + article.edition
+        if m.newsDelayed then heading = heading + "  /  Update delayed"
+        m.top.FindNode("newsHeading").text = heading
+        m.top.FindNode("newsTitle").text = article.title
+        m.top.FindNode("newsSummary").text = article.summary
+        m.top.FindNode("newsUrl").text = shortText(article.sourceUrl, 180)
     else
         m.pageTimer.control = "stop"
         renderTelegramPage()
@@ -261,11 +263,49 @@ sub onAgendaChanged()
 end sub
 
 sub onTodayChanged()
-    m.today.text = m.calendarTask.today
+    if m.todayItems.Count() = 0
+        m.today.text = m.calendarTask.today
+        if m.calendarTask.today.Instr("unavailable") >= 0 then m.todayBody.text = "Calendar unavailable"
+    end if
+end sub
+
+sub onTodayItemsChanged()
+    m.todayItems = m.calendarTask.todayItems
+    m.todayPage = 0
+    showTodayPage()
+end sub
+
+sub showTodayPage()
+    count = m.todayItems.Count()
+    noun = " events"
+    if count = 1 then noun = " event"
+    m.today.text = "TODAY  /  " + count.ToStr() + noun
+    if count = 0
+        m.todayBody.text = "No events today"
+        return
+    end if
+    pages = int((count + 2) / 3)
+    if pages > 1 then m.today.text = m.today.text + "  /  " + (m.todayPage + 1).ToStr() + " OF " + pages.ToStr()
+    first = m.todayPage * 3
+    last = first + 2
+    if last >= count then last = count - 1
+    text = ""
+    for i = first to last
+        if text <> "" then text = text + chr(10)
+        text = text + m.todayItems[i].timeLabel + "   " + shortText(m.todayItems[i].title, 48)
+    end for
+    m.todayBody.text = text
+    m.todayBody.font.size = 34
+    if count <= 2 then m.todayBody.font.size = 38
 end sub
 
 sub nextAgendaPage()
-    pages = int((m.agendaLines.Count() + 11) / 12)
+    todayPages = int((m.todayItems.Count() + 2) / 3)
+    if todayPages > 1
+        m.todayPage = (m.todayPage + 1) mod todayPages
+        showTodayPage()
+    end if
+    pages = int((m.agendaLines.Count() + 5) / 6)
     if pages > 1
         m.agendaPage = (m.agendaPage + 1) mod pages
         showAgendaPage()
@@ -274,14 +314,14 @@ end sub
 
 sub showAgendaPage()
     text = ""
-    first = m.agendaPage * 12
-    last = first + 11
+    first = m.agendaPage * 6
+    last = first + 5
     if last >= m.agendaLines.Count() then last = m.agendaLines.Count() - 1
     for i = first to last
         if text <> "" then text = text + chr(10)
         text = text + m.agendaLines[i]
     end for
-    pages = int((m.agendaLines.Count() + 11) / 12)
+    pages = int((m.agendaLines.Count() + 5) / 6)
     if pages > 1 then text = text + chr(10) + "Page " + (m.agendaPage + 1).ToStr() + " / " + pages.ToStr()
     m.agenda.text = text
 end sub

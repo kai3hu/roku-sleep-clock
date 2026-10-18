@@ -22,11 +22,7 @@ function calDeviceUtc(wall as integer) as integer
 end function
 
 function buildTodayAgenda(body as string, nowSeconds as integer) as string
-    local = calDate(nowSeconds)
-    local.ToLocalTime()
-    raw = local.GetYear().ToStr() + calTwo(local.GetMonth()) + calTwo(local.GetDayOfMonth())
-    wall = calWall(raw)
-    rows = calAgendaRows(body, calDeviceUtc(wall), calDeviceUtc(wall + 86400))
+    rows = calTodayRows(body, nowSeconds)
     if rows.Count() = 0 then return "TODAY  /  No events"
     first = rows[0]
     for each row in rows
@@ -40,6 +36,14 @@ function buildTodayAgenda(body as string, nowSeconds as integer) as string
     title = first.title
     if len(title) > 28 then title = left(title, 25) + "..."
     return "TODAY  /  " + rows.Count().ToStr() + countLabel + "  /  " + first.timeLabel + " " + title
+end function
+
+function calTodayRows(body as string, nowSeconds as integer) as object
+    local = calDate(nowSeconds)
+    local.ToLocalTime()
+    raw = local.GetYear().ToStr() + calTwo(local.GetMonth()) + calTwo(local.GetDayOfMonth())
+    wall = calWall(raw)
+    return calAgendaRows(body, calDeviceUtc(wall), calDeviceUtc(wall + 86400))
 end function
 
 function calAgendaRows(body as string, windowStart as integer, windowEnd as integer) as object
@@ -89,7 +93,7 @@ function calAgendaRows(body as string, windowStart as integer, windowEnd as inte
                     label = days[local.GetDayOfWeek()] + " " + calTwo(local.GetMonth()) + "/" + calTwo(local.GetDayOfMonth())
                     title = event.summary
                     if Len(title) > 40 then title = Left(title, 37) + "..."
-                    rows.Push({ sort: occurrence, finish:occurrence + duration, title:title, timeLabel:timeLabel, text: label + "   " + timeLabel + "   " + title })
+                    rows.Push({ sort: occurrence, finish:occurrence + duration, title:event.summary, timeLabel:timeLabel, text: label + "   " + timeLabel + "   " + title })
                 end if
             end for
         end if

@@ -3,7 +3,7 @@
     <interface>
         <field id="result" type="assocarray" alwaysNotify="true" />
     </interface>
-    <script type="text/brightscript" uri="pkg:/components/WikiContent.brs" />
+    <script type="text/brightscript" uri="pkg:/components/SharedContent.brs" />
     <script type="text/brightscript" uri="pkg:/components/TelegramContent.brs" />
     <script type="text/brightscript" uri="pkg:/components/TelegramTask.brs" />
 </component>
