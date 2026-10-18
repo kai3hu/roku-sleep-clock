@@ -71,13 +71,16 @@
                     <Font role="font" uri="font:SystemFontFile" size="20" />
                 </Label>
             </Group>
-            <Group id="telegram" visible="false" translation="[12,190]">
-                <Label width="1656" height="45" text="TELEGRAM  /  @DNSPODT  /  RECENT POSTS" color="0x0C0C0CFF">
+            <Group id="telegram" visible="false" translation="[12,155]">
+                <Label id="telegramHeading" width="1656" height="45" text="TELEGRAM  /  @DNSPODT" color="0x0C0C0CFF">
                     <Font role="font" uri="font:SystemFontFile" size="28" />
                 </Label>
-                <Group id="telegramGrid" translation="[0,75]" />
-                <Label id="telegramStatus" translation="[0,715]" width="1656" height="35" color="0x0C0C0CFF">
+                <Group id="telegramGrid" translation="[0,55]" />
+                <Label id="telegramStatus" translation="[0,710]" width="1656" height="35" color="0x0C0C0CFF">
                     <Font role="font" uri="font:SystemFontFile" size="20" />
+                </Label>
+                <Label id="telegramAttribution" translation="[0,750]" width="1656" height="35" color="0x0C0C0CFF">
+                    <Font role="font" uri="pkg:/fonts/NotoSansSC-Regular.otf" size="18" fallbackGlyph="u0020" />
                 </Label>
             </Group>
         </Group>

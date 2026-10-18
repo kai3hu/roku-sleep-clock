@@ -78,8 +78,34 @@ sub Main()
     m.telegramTask.result = {available:false}
     onTelegramChanged()
     check(m.telegramDelayed and m.telegramAvailablePages.Count() = 3, "Failed Telegram refresh retains usable pages")
+    ' Real reader rendering exercises SG fonts, timer overrides and continuation.
+    m.displayColor = "0x0C0C0CFF"
+    m.telegramGrid.createChild = mockReaderLabel
+    m.top.nodes.telegramHeading = {text:""}
+    m.top.nodes.telegramAttribution = {text:""}
+    longText = ""
+    for i = 1 to 900
+        longText = longText + chr(20013)
+    end for
+    m.telegramPages = telegramBuildPages([{id:12,text:longText,isArticle:true,author:"Author",timestamp:"2026-10-18T07:00:00Z"},{id:13,text:"Next message",timestamp:"2026-10-18T07:00:00Z"}], invalid)
+    m.telegramPageIndex = 0
+    m.rotationPage = "news"
+    rotateContent()
+    check(m.rotationPage = "telegram" and m.telegramPageIndex = 1, "First article page is rendered")
+    check(m.rotationTimer.duration >= 90, "Reader overrides the default minute with article reading time")
+    check(m.top.nodes.telegramHeading.text.Instr("ARTICLE") > 0, "Source content is identified as an article")
+    check(m.top.nodes.telegramStatus.text.Instr("Next page in") > 0, "Reading countdown is visible")
+    rotateContent()
+    check(m.rotationPage = "telegram" and m.telegramPageIndex = 2, "Continuation pages advance without agenda or news interruptions")
+    check(m.top.nodes.telegramStatus.text.Instr("Update delayed") > 0, "Delayed-data notice survives the new reader")
+    rotateContent()
+    check(m.rotationPage = "agenda" and m.rotationTimer.duration = 120, "Article completion returns to agenda before the next message")
     print "NEWS_SCENE_TEST_FAILURES="; m.failures
 end sub
+
+function mockReaderLabel(kind as string) as object
+    return {}
+end function
 
 function emptyGridCount() as integer
     return 0

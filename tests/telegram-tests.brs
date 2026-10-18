@@ -23,6 +23,31 @@ sub Main()
     check(replyPosts.Count() = 1 and replyPosts[0].text = "Own complete message", "Reply previews are excluded without losing the actual reply")
     check(telegramParsePosts(fixture.Replace("Own complete message", ""), "DNSPODT").Count() = 0, "Quote-only wrappers are not mistaken for new messages")
     check(telegramPlainText("<blockquote>Own quoted reporting</blockquote>") = "Own quoted reporting", "Blockquotes belonging to the actual post remain intact")
+    sourceMarkup = "<a href=" + q + "https://telegra.ph/Example-10-18" + q + ">Caption</a> | <a href=" + q + "https://mp.weixin.qq.com/s/example" + q + ">Source</a>"
+    sourcePosts = telegramParsePosts(telegramFixture(11, sourceMarkup), "DNSPODT")
+    check(sourcePosts[0].sourceOnly and sourcePosts[0].articleUrl = "https://telegra.ph/Example-10-18", "Source-ending posts follow their Telegraph article, not the caption or reply")
+    check(not telegramSourceLinks(sourceMarkup, "Source followed by more text").sourceOnly, "Source must be the final word")
+    check(telegramSourceLinks(sourceMarkup, "Caption SOURCE.").sourceOnly, "Source detection tolerates case and punctuation")
+    check(telegramTelegraphPath("https://telegra.ph/Example-10-18?x=1") = "Example-10-18", "Article paths omit query strings")
+    check(telegramTelegraphPath("https://telegra.ph/%E4%B8%AD-10-18") = "%E4%B8%AD-10-18", "Encoded non-Latin article paths are preserved")
+    unsafe = ["http://telegra.ph/test", "https://telegra.ph.evil.com/test", "https://telegra.ph@evil.com/test", "https://evil.com/test", "https://telegra.ph/../test", "https://telegra.ph/%2fsecret", "https://telegra.ph/%255csecret", "https://telegra.ph/%QQ", "https://telegra.ph/"]
+    for each url in unsafe
+        check(telegramTelegraphPath(url) = "", "Unsafe or malformed article URLs are rejected")
+    end for
+    articleData = {ok:true, result:{title:"Article title", author_name:"Author", content:[{tag:"p",children:["First ",{tag:"strong",children:["paragraph"]},"."]},{tag:"figure",children:[{tag:"img",attrs:{src:"https://example.com/private"}},{tag:"figcaption",children:["A caption"]}]},{tag:"p",children:["Last paragraph."]},{tag:"iframe",children:["Unwanted embedded text"]}]}}
+    article = telegramParseArticle(articleData, "https://telegra.ph/Example-10-18")
+    check(article.text = "First paragraph." + chr(10) + "A caption" + chr(10) + "Last paragraph.", "Article paragraphs and inline text survive without media or HTML")
+    fullPost = telegramPostWithArticle(sourcePosts[0], article)
+    check(fullPost.isArticle and fullPost.text.Instr("Caption | Source") < 0 and fullPost.text.Instr("Article title") = 0, "Article replaces the Telegram caption completely")
+    check(fullPost.text.Instr("Last paragraph.") > 0 and fullPost.id = 11, "Complete source body retains original post identity")
+    check(telegramParseArticle({ok:false}, "") = invalid, "API failures cannot become article pages")
+    check(telegramParseArticle({ok:true,result:{title:"Empty",content:[]}}, "") = invalid, "Empty articles are not displayed")
+    nested = "Deep text"
+    for i = 0 to 34
+        nested = {tag:"strong",children:[nested]}
+    end for
+    check(telegramParseArticle({ok:true,result:{title:"Too deep",content:[nested]}}, "") = invalid, "Depth limits reject an article instead of silently omitting text")
+    check(telegramReadingSeconds("Short post", false) = 60 and telegramReadingSeconds("Short article", true) = 90, "Messages and articles have distinct minimum reading times")
     phase = {page:"agenda", nextIndex:0}
     for i = 0 to 9
         phase = screensaverNextPhase(phase.page, phase.nextIndex, 5, true)
@@ -42,19 +67,17 @@ sub Main()
         for i = 1 to size
             text = text + "a"
         end for
-        posts.Push({text:text})
+        posts.Push({id:size, text:text})
     end for
     font = {GetOneLineWidth:mockWidth, GetOneLineHeight:mockHeight}
     pages = telegramBuildPages(posts, font)
-    check(pages[0][1].height > pages[0][0].height, "Long messages receive more height than short messages")
+    check(pages.Count() = 6, "Short and medium messages each receive their own page")
     total = 0
     for each cards in pages
-        ends = [0, 0]
+        check(cards.Count() = 1, "Exactly one message is shown at a time")
         for each card in cards
-            column = int(card.x / 860)
-            check(card.y >= ends[column], "Masonry cards do not overlap")
-            check(card.y + card.height + 35 <= 620, "Cards stay above the footer")
-            ends[column] = card.y + card.height + 35
+            check(card.width = 1650 and card.x = 0 and card.y = 0, "Every message uses the full reading width")
+            check(card.height <= 600, "Body lines stay above the footer")
             total = total + len(card.text.Replace(chr(10), ""))
             for each line in card.text.Split(chr(10))
                 check(telegramTextWidth(line, font) <= card.width - 10, "Every measured line fits its allocated width")
@@ -66,19 +89,40 @@ sub Main()
     for i = 1 to 300
         wide = wide + chr(20013)
     end for
-    pages = telegramBuildPages([{text:wide + wide + wide}], invalid)
+    pages = telegramBuildPages([{id:1, text:wide + wide + wide, isArticle:true}, {id:2,text:"Next message"}], invalid)
     check(pages.Count() > 1, "Long messages continue onto subsequent pages")
     total = 0
-    for each page in pages
+    for i = 0 to pages.Count() - 2
+        page = pages[i]
         for each card in page
             check(card.width = 1650 and page.Count() = 1, "Long messages receive exclusive full-width pages")
             total = total + len(card.text.Replace(chr(10), ""))
+            check(card.part = i + 1 and card.parts = pages.Count() - 1, "Each article has its own page count")
+            check(card.duration >= 90 and card.duration <= 180, "Article pages receive longer reading time")
         end for
     end for
     check(total = 900, "Every wide character survives continuation pagination")
+    check(pages[0][0].lines - pages[1][0].lines <= 1, "Article pages are balanced to avoid a nearly empty final page")
+    check(telegramHasContinuation(pages, 1), "Same-article continuation advances immediately")
+    check(not telegramHasContinuation(pages, pages.Count() - 1), "A different message waits for the next Telegram visit")
+    check(not telegramHasContinuation(pages, pages.Count()), "End of collection returns to agenda")
+    check(not telegramHasContinuation([[], []], 1), "Empty pages cannot trigger continuation")
+    check(telegramReadingSeconds(wide + wide + wide, true) = 180, "Long articles cap per-page reading time")
+    check(telegramReadingSeconds(wide + wide + wide, false) = 150, "Ordinary messages cap per-page reading time")
+    paragraphs = telegramWrapLines("First" + chr(10) + chr(10) + "Last", font, 1600)
+    check(paragraphs.Count() = 3 and paragraphs[1] = "", "Paragraph separation survives line wrapping")
     onePage = telegramBuildPages([{text:wide + wide}], invalid)
     check(onePage.Count() = 1 and onePage[0][0].width = 1650, "A post too long for a column can fit whole on one full-width page")
     check(telegramBuildPages([], font).Count() = 0, "Empty data produces no placeholder cards")
+    manyParagraphs = []
+    for i = 1 to 170
+        manyParagraphs.Push("Paragraph")
+    end for
+    balanced = telegramBuildPages([{id:20,text:manyParagraphs.Join(chr(10)),isArticle:true}], font)
+    check(balanced.Count() = 14, "Very long articles receive all required pages")
+    for each page in balanced
+        check(page[0].lines >= 12 and page[0].lines <= 13, "Even very long articles avoid orphan final pages")
+    end for
     print "TELEGRAM_TEST_FAILURES="; m.failures
 end sub
 

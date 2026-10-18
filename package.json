@@ -1,6 +1,6 @@
 {
   "name": "roku-sleep-clock",
-  "version": "1.0.16",
+  "version": "1.0.17",
   "private": true,
   "description": "Dim Roku screensavers with a today-first Outlook agenda, Kagi News, full-text Telegram posts, Celsius weather and automatic day/night brightness.",
   "scripts": {

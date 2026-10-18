@@ -64,10 +64,12 @@ function telegramParsePosts(html as string, channel as string) as object
             textTag = "<div[^>]*class=" + q + "[^" + q + "]*\bjs-message_text\b[^" + q + "]*" + q + "[^>]*>"
             textMatch = CreateObject("roRegex", textTag, "is").Match(body)
             if textMatch.Count() > 0 and not seen.DoesExist(item[1])
-                text = telegramPlainText(telegramDivBody(mid(body, body.Instr(textMatch[0]) + 1)))
+                ownMarkup = telegramDivBody(mid(body, body.Instr(textMatch[0]) + 1))
+                text = telegramPlainText(ownMarkup)
                 dateMatch = CreateObject("roRegex", "<time[^>]*datetime=" + q + "([^" + q + "]+)" + q, "is").Match(body)
                 if text <> "" and dateMatch.Count() > 1
-                    result.Push({id:val(item[1]), text:text, timestamp:dateMatch[1], url:"https://t.me/" + channel + "/" + item[1]})
+                    links = telegramSourceLinks(ownMarkup, text)
+                    result.Push({id:val(item[1]), text:text, timestamp:dateMatch[1], url:"https://t.me/" + channel + "/" + item[1], sourceOnly:links.sourceOnly, articleUrl:links.articleUrl})
                     seen[item[1]] = true
                 end if
             end if
@@ -85,9 +87,9 @@ function telegramTextWidth(text as string, font as dynamic) as integer
     width = 0
     for i = 1 to len(text)
         if asc(mid(text, i, 1)) > 255
-            width = width + 28
+            width = width + 34
         else
-            width = width + 17
+            width = width + 34
         end if
     end for
     return width
@@ -105,7 +107,10 @@ function telegramWrapLines(text as string, font as dynamic, width = 780 as integ
     line = ""
     for i = 1 to len(text)
         char = mid(text, i, 1)
-        if telegramTextWidth(line + char, font) > width and line <> ""
+        if char = chr(10)
+            lines.Push(line.Trim())
+            line = ""
+        else if telegramTextWidth(line + char, font) > width and line <> ""
             splitAt = telegramLastSpace(line)
             carry = char
             if splitAt > len(line) / 2
@@ -122,66 +127,163 @@ function telegramWrapLines(text as string, font as dynamic, width = 780 as integ
     return lines
 end function
 
-' Keep whole short posts together. Overflowing posts continue across columns/pages.
+' Each message owns the entire reading area, including all continuation pages.
 function telegramBuildPages(posts as object, font as dynamic) as object
     pages = []
-    cards = []
-    heights = [0, 0]
-    lineHeight = 38
+    lineHeight = 46
     if font <> invalid then lineHeight = font.GetOneLineHeight() + 2
-    ' Leave safe vertical headroom for SceneGraph's CJK glyph ascent/descent.
-    if lineHeight < 42 then lineHeight = 42
-    capacity = int((620 - 60) / lineHeight)
+    if lineHeight < 46 then lineHeight = 46
+    capacity = int(600 / lineHeight)
     if capacity < 1 then capacity = 1
     for each post in posts
-        lines = telegramWrapLines(post.text, font)
-        if lines.Count() > capacity
-            ' Long posts receive an exclusive full-width page before any continuation.
-            if cards.Count() > 0 then pages.Push(cards)
-            cards = []
-            heights = [0, 0]
-            wideLines = telegramWrapLines(post.text, font, 1640)
-            offset = 0
-            while offset < wideLines.Count()
-                count = wideLines.Count() - offset
-                if count > capacity then count = capacity
-                part = []
-                for i = offset to offset + count - 1
-                    part.Push(wideLines[i])
-                end for
-                pages.Push([{post:post, x:0, y:0, width:1650, text:part.Join(chr(10)), lines:count, height:count * lineHeight + 8, continued:offset > 0}])
-                offset = offset + count
-            end while
+        lines = telegramWrapLines(post.text, font, 1600)
+        offset = 0
+        parts = int((lines.Count() + capacity - 1) / capacity)
+        baseSize = 0
+        extraLines = 0
+        if parts > 0
+            baseSize = int(lines.Count() / parts)
+            extraLines = lines.Count() mod parts
+        end if
+        partIndex = 1
+        while offset < lines.Count()
+            count = baseSize
+            if partIndex <= extraLines then count = count + 1
+            part = []
+            for i = offset to offset + count - 1
+                part.Push(lines[i])
+            end for
+            text = part.Join(chr(10))
+            isArticle = post.isArticle = true
+            duration = telegramReadingSeconds(text, isArticle)
+            pages.Push([{post:post, x:0, y:0, width:1650, text:text, lineTexts:part, lineHeight:lineHeight, lines:count, height:count * lineHeight, continued:offset > 0, part:partIndex, parts:parts, duration:duration}])
+            offset = offset + count
+            partIndex = partIndex + 1
+        end while
+    end for
+    return pages
+end function
+
+function telegramReadingSeconds(text as string, isArticle as boolean) as integer
+    cjk = 0
+    words = 0
+    inWord = false
+    for i = 1 to len(text)
+        char = mid(text, i, 1)
+        if asc(char) > 255
+            cjk = cjk + 1
+            inWord = false
+        else if char <> " " and char <> chr(10) and char <> chr(13) and char <> chr(9)
+            if not inWord then words = words + 1
+            inWord = true
         else
-            offset = 0
-            while offset < lines.Count()
-                column = 0
-                if heights[1] < heights[0] then column = 1
-                remaining = lines.Count() - offset
-                room = int((620 - heights[column] - 60) / lineHeight)
-                ' If a complete post fits an empty column, do not split it into leftover space.
-                if room < 1 or (remaining <= capacity and remaining > room)
-                    if cards.Count() > 0 then pages.Push(cards)
-                    cards = []
-                    heights = [0, 0]
-                    column = 0
-                    room = capacity
-                end if
-                count = remaining
-                if count > room then count = room
-                part = []
-                for i = offset to offset + count - 1
-                    part.Push(lines[i])
-                end for
-                height = count * lineHeight + 8
-                cards.Push({post:post, x:column * 860, y:heights[column], width:790, text:part.Join(chr(10)), lines:count, height:height, continued:offset > 0})
-                heights[column] = heights[column] + height + 52
-                offset = offset + count
-            end while
+            inWord = false
         end if
     end for
-    if cards.Count() > 0 then pages.Push(cards)
-    return pages
+    seconds = int(cjk / 5 + words / 3.3 + 15.999)
+    minimum = 60
+    maximum = 150
+    if isArticle
+        minimum = 90
+        maximum = 180
+    end if
+    if seconds < minimum then seconds = minimum
+    if seconds > maximum then seconds = maximum
+    return seconds
+end function
+
+function telegramHasContinuation(pages as object, nextIndex as integer) as boolean
+    if nextIndex < 1 or nextIndex >= pages.Count() then return false
+    previous = pages[nextIndex - 1]
+    following = pages[nextIndex]
+    if previous.Count() = 0 or following.Count() = 0 then return false
+    return following[0].continued = true and previous[0].post.id = following[0].post.id
+end function
+
+' Accept only public Telegraph article paths, never arbitrary linked hosts.
+function telegramTelegraphPath(url as string) as string
+    match = CreateObject("roRegex", "^https://telegra[.]ph/([^?#]+)([?#].*)?$", "i").Match(url)
+    if match.Count() < 2 then return ""
+    raw = match[1]
+    if len(raw) > 2048 then return ""
+    if CreateObject("roRegex", "%[0-9a-f]{2}", "i").ReplaceAll(raw, "").Instr("%") >= 0 then return ""
+    slug = raw.Unescape()
+    if slug = "" or slug.Instr("..") >= 0 then return ""
+    if CreateObject("roRegex", "[/\\?#%\x00-\x1f]", "").IsMatch(slug) then return ""
+    return slug.Escape()
+end function
+
+function telegramSourceLinks(markup as string, text as string) as object
+    result = {sourceOnly:CreateObject("roRegex", "\bsource[\s.!:;]*$", "i").IsMatch(text), articleUrl:""}
+    if not result.sourceOnly then return result
+    q = chr(34)
+    anchors = CreateObject("roRegex", "<a\b[^>]*href=" + q + "([^" + q + "]+)" + q, "is").MatchAll(markup)
+    for each anchor in anchors
+        url = anchor[1].Replace("&amp;", "&")
+        path = telegramTelegraphPath(url)
+        if path <> ""
+            result.articleUrl = "https://telegra.ph/" + path
+            return result
+        end if
+    end for
+    return result
+end function
+
+' Telegraph content is structured JSON, not HTML. Ignore embedded media.
+function telegramArticleNodeText(node as dynamic, depth = 0 as integer, state = invalid as dynamic) as string
+    if state = invalid then state = {complete:true}
+    if depth > 32
+        state.complete = false
+        return ""
+    end if
+    if isText(node) then return node
+    if type(node) = "roArray"
+        text = ""
+        for each child in node
+            text = text + telegramArticleNodeText(child, depth + 1, state)
+        end for
+        return text
+    end if
+    if type(node) <> "roAssociativeArray" then return ""
+    if not isText(node.tag) then return ""
+    tag = lcase(node.tag)
+    if tag = "img" or tag = "video" or tag = "iframe" or tag = "script" or tag = "style" then return ""
+    if tag = "br" or tag = "hr" then return chr(10)
+    text = telegramArticleNodeText(node.children, depth + 1, state)
+    if tag = "p" or tag = "h3" or tag = "h4" or tag = "blockquote" or tag = "li" or tag = "pre" or tag = "figure" or tag = "figcaption" or tag = "ul" or tag = "ol" or tag = "aside"
+        return chr(10) + text + chr(10)
+    end if
+    return text
+end function
+
+function telegramNormalizeArticle(text as string) as string
+    text = text.Replace(chr(13), "").Replace(chr(160), " ")
+    paragraphs = []
+    for each line in text.Split(chr(10))
+        cleaned = CreateObject("roRegex", "[ \t]+", "").ReplaceAll(line, " ").Trim()
+        if cleaned <> "" then paragraphs.Push(cleaned)
+    end for
+    return paragraphs.Join(chr(10))
+end function
+
+function telegramParseArticle(data as dynamic, url as string) as dynamic
+    if type(data) <> "roAssociativeArray" then return invalid
+    if data.ok <> true then return invalid
+    page = data.result
+    if type(page) <> "roAssociativeArray" then return invalid
+    if not isText(page.title) or type(page.content) <> "roArray" then return invalid
+    state = {complete:true}
+    text = telegramNormalizeArticle(telegramArticleNodeText(page.content, 0, state))
+    if not state.complete then return invalid
+    if text = "" then return invalid
+    title = telegramNormalizeArticle(page.title)
+    author = ""
+    if isText(page.author_name) then author = shortText(page.author_name, 100)
+    return {title:title, text:text, author:author, url:url}
+end function
+
+function telegramPostWithArticle(post as object, article as object) as object
+    return {id:post.id, timestamp:post.timestamp, url:post.url, isArticle:true, articleUrl:article.url, author:article.author, text:article.title + chr(10) + chr(10) + article.text}
 end function
 
 function telegramLocalTime(stamp as string) as string

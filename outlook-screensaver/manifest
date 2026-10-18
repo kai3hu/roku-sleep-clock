@@ -1,7 +1,7 @@
 screensaver_title=Sleep Clock + Agenda
 major_version=1
 minor_version=0
-build_version=16
+build_version=17
 ui_resolutions=fhd
 splash_color=#000000
 mm_icon_focus_hd=pkg:/images/menu-hd.png

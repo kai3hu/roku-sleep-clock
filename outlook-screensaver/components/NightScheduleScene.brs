@@ -44,6 +44,9 @@ sub init()
     m.telegramPagesUpdated = ""
     m.telegramUpdated = ""
     m.telegramDelayed = false
+    m.telegramReadingClock = invalid
+    m.telegramReadingDuration = 60
+    m.telegramStatusBase = ""
 
     m.tick.ObserveField("fire", "onTick")
     m.refresh.ObserveField("fire", "refreshData")
@@ -69,6 +72,7 @@ end sub
 
 sub onTick()
     updateClock()
+    updateTelegramCountdown()
 end sub
 
 sub updateClock()
@@ -130,14 +134,14 @@ sub onTelegramChanged()
         m.telegramPosts = result.posts
         m.telegramAvailablePages = result.pages
         m.telegramUpdated = telegramLocalTime(result.fetchedAt)
-        m.telegramDelayed = false
+        m.telegramDelayed = result.delayed = true
     else
         m.telegramDelayed = true
     end if
     ' Render only at page entry so a refresh never interrupts reading.
 end sub
 
-sub renderTelegramPage()
+function renderTelegramPage() as integer
     m.telegramGrid.removeChildrenIndex(m.telegramGrid.getChildCount(), 0)
     if m.telegramPageIndex >= m.telegramPages.Count()
         ' Only consume precomputed data. Never register fonts or paginate on RENDER.
@@ -145,25 +149,51 @@ sub renderTelegramPage()
         m.telegramPageIndex = 0
         m.telegramPagesUpdated = m.telegramUpdated
     end if
-    if m.telegramPages.Count() = 0 then return
+    if m.telegramPages.Count() = 0 then return 60
     cards = m.telegramPages[m.telegramPageIndex]
+    duration = 60
     for each card in cards
         post = card.post
-        metaText = telegramLocalTime(post.timestamp) + "  /  t.me/" + telegramChannel() + "/" + post.id.ToStr()
+        kind = "MESSAGE"
+        if post.isArticle = true then kind = "ARTICLE"
+        m.top.FindNode("telegramHeading").text = "TELEGRAM  /  @" + telegramChannel() + "  /  " + kind
+        metaText = telegramLocalTime(post.timestamp) + "  /  Page " + card.part.ToStr() + " of " + card.parts.ToStr()
         if card.continued then metaText = metaText + "  /  Continued"
         meta = createWeatherLabel(m.telegramGrid, metaText, 20, card.width, 30)
-        meta.translation = [card.x, card.y]
-        body = createWeatherLabel(m.telegramGrid, card.text, 26, card.width, card.height)
-        body.translation = [card.x, card.y + 35]
-        body.wrap = true
-        body.numLines = card.lines
-        body.font.uri = "pkg:/fonts/NotoSansSC-Regular.otf"
-        body.font.fallbackGlyph = "u0020"
+        meta.translation = [0, 0]
+        ' Render the worker's exact lines; SceneGraph must not wrap them again.
+        for i = 0 to card.lineTexts.Count() - 1
+            body = createWeatherLabel(m.telegramGrid, card.lineTexts[i], 30, card.width, card.lineHeight)
+            body.translation = [0, 42 + i * card.lineHeight]
+            body.wrap = false
+            body.font.uri = "pkg:/fonts/NotoSansSC-Regular.otf"
+            body.font.fallbackGlyph = "u0020"
+        end for
+        attribution = "t.me/" + telegramChannel() + "/" + post.id.ToStr()
+        if post.isArticle = true
+            attribution = "Article: telegra.ph  /  " + attribution
+            if post.author <> "" then attribution = attribution + "  /  " + post.author
+        end if
+        m.top.FindNode("telegramAttribution").text = attribution
+        duration = card.duration
     end for
-    status = "https://t.me/" + telegramChannel() + "  /  Page " + (m.telegramPageIndex + 1).ToStr() + " of " + m.telegramPages.Count().ToStr() + "  /  Checked " + m.telegramPagesUpdated + "  /  Full text"
+    status = "Full text  /  Checked " + m.telegramPagesUpdated
     if m.telegramDelayed then status = status + "  /  Update delayed"
-    m.top.FindNode("telegramStatus").text = status
+    m.telegramStatusBase = status
+    m.telegramReadingDuration = duration
+    m.telegramReadingClock = CreateObject("roTimespan")
+    m.telegramReadingClock.Mark()
+    updateTelegramCountdown()
     m.telegramPageIndex = m.telegramPageIndex + 1
+    return duration
+end function
+
+sub updateTelegramCountdown()
+    if m.rotationPage <> "telegram" or m.telegramReadingClock = invalid then return
+    remaining = m.telegramReadingDuration - int(m.telegramReadingClock.TotalMilliseconds() / 1000)
+    if remaining < 0 then remaining = 0
+    countdown = int(remaining / 60).ToStr() + ":" + twoDigits(remaining mod 60)
+    m.top.FindNode("telegramStatus").text = m.telegramStatusBase + "  /  Next page in " + countdown
 end sub
 
 sub loadNews()
@@ -197,6 +227,15 @@ sub setNewsStories(articles as object)
 end sub
 
 sub rotateContent()
+    if m.rotationPage = "telegram"
+        if telegramHasContinuation(m.telegramPages, m.telegramPageIndex)
+            duration = renderTelegramPage()
+            m.rotationTimer.control = "stop"
+            m.rotationTimer.duration = duration
+            m.rotationTimer.control = "start"
+            return
+        end if
+    end if
     if m.pendingNewsStories <> invalid
         setNewsStories(m.pendingNewsStories)
         m.pendingNewsStories = invalid
@@ -225,7 +264,7 @@ sub rotateContent()
         m.top.FindNode("newsUrl").text = shortText(article.sourceUrl, 180)
     else
         m.pageTimer.control = "stop"
-        renderTelegramPage()
+        phase.duration = renderTelegramPage()
     end if
     m.rotationTimer.control = "stop"
     m.rotationTimer.duration = phase.duration
