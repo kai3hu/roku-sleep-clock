@@ -1,5 +1,6 @@
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
+require('./check-scene-threads.cjs');
 
 const root = path.resolve(__dirname, '..');
 const cli = require.resolve('brs/bin/cli.js', { paths: [root, path.join(root, '.tools')] });

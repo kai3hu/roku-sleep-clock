@@ -79,6 +79,16 @@ sub Main()
     rotateContent()
     rotateContent()
     check(m.telegramPageIndex = 2, "Next Telegram visit resumes the next page")
+    m.telegramTask = {result:{available:true, posts:[{text:"Updated message"}], pages:[[], [], []], fetchedAt:"2026-10-18T07:00:00Z"}}
+    onTelegramChanged()
+    check(m.telegramAvailablePages.Count() = 3 and m.telegramPages.Count() = 2, "Task-prepared pages wait for the current snapshot to finish")
+    rotateContent()
+    rotateContent()
+    rotateContent()
+    check(m.telegramPages.Count() = 3 and m.telegramPageIndex = 1, "Next collection uses task-prepared pages without render-thread pagination")
+    m.telegramTask.result = {available:false}
+    onTelegramChanged()
+    check(m.telegramDelayed and m.telegramAvailablePages.Count() = 3, "Failed task retains usable prepared pages")
     print "WIKI_TEST_FAILURES="; m.failures
 end sub
 

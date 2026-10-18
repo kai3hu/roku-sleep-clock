@@ -30,6 +30,22 @@ sub downloadTelegram()
         return
     end if
     posts = telegramParsePosts(response.GetString(), telegramChannel())
+    pages = []
+    if posts.Count() > 0
+        ' This function runs on TASK, not the SceneGraph init/render thread.
+        registry = CreateObject("roFontRegistry")
+        font = invalid
+        if registry <> invalid
+            if registry.Register("pkg:/fonts/NotoSansSC-Regular.otf")
+                families = registry.GetFamilies()
+                for each family in families
+                    if family.Instr("Noto Sans SC") >= 0 then font = registry.GetFont(family, 26, false, false)
+                end for
+            end if
+        end if
+        ' The layout helper also handles missing metrics with conservative widths.
+        pages = telegramBuildPages(posts, font)
+    end if
     now = CreateObject("roDateTime")
-    m.top.result = {available:posts.Count() > 0, posts:posts, fetchedAt:now.ToISOString()}
+    m.top.result = {available:pages.Count() > 0, posts:posts, pages:pages, fetchedAt:now.ToISOString()}
 end sub

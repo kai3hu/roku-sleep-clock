@@ -36,19 +36,12 @@ sub init()
     m.telegramGrid = m.top.FindNode("telegramGrid")
     m.telegramTask = m.top.FindNode("telegramTask")
     m.telegramPosts = []
+    m.telegramAvailablePages = []
     m.telegramPages = []
     m.telegramPageIndex = 0
     m.telegramPagesUpdated = ""
     m.telegramUpdated = ""
     m.telegramDelayed = false
-    m.telegramFontRegistry = CreateObject("roFontRegistry")
-    m.telegramLayoutFont = invalid
-    if m.telegramFontRegistry.Register("pkg:/fonts/NotoSansSC-Regular.otf")
-        families = m.telegramFontRegistry.GetFamilies()
-        for each family in families
-            if family.Instr("Noto Sans SC") >= 0 then m.telegramLayoutFont = m.telegramFontRegistry.GetFont(family, 26, false, false)
-        end for
-    end if
 
     m.tick.ObserveField("fire", "onTick")
     m.refresh.ObserveField("fire", "refreshData")
@@ -132,7 +125,10 @@ sub onTelegramChanged()
     result = m.telegramTask.result
     if result = invalid then return
     if result.available
+        if type(result.pages) <> "roArray" then return
+        if result.pages.Count() = 0 then return
         m.telegramPosts = result.posts
+        m.telegramAvailablePages = result.pages
         m.telegramUpdated = telegramLocalTime(result.fetchedAt)
         m.telegramDelayed = false
     else
@@ -144,7 +140,8 @@ end sub
 sub renderTelegramPage()
     m.telegramGrid.removeChildrenIndex(m.telegramGrid.getChildCount(), 0)
     if m.telegramPageIndex >= m.telegramPages.Count()
-        m.telegramPages = telegramBuildPages(m.telegramPosts, m.telegramLayoutFont)
+        ' Only consume precomputed data. Never register fonts or paginate on RENDER.
+        m.telegramPages = m.telegramAvailablePages
         m.telegramPageIndex = 0
         m.telegramPagesUpdated = m.telegramUpdated
     end if
