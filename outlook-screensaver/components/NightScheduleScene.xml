@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="NightScheduleScene" extends="Scene">
+    <children>
+        <Rectangle id="blackBackground" width="1920" height="1080" color="0x000000FF" />
+        <Group id="content" translation="[120,80]">
+            <Label id="clock" width="600" height="150" color="0x303030FF">
+                <Font role="font" uri="font:SystemFontFile" size="110" />
+            </Label>
+            <Label
+                id="heading"
+                visible="false"
+                translation="[12,155]"
+                width="880"
+                height="55"
+                text="NEXT 7 DAYS"
+                color="0x303030FF">
+                <Font role="font" uri="font:SystemFontFile" size="30" />
+            </Label>
+            <Label
+                id="agenda"
+                visible="false"
+                translation="[12,215]"
+                width="900"
+                height="700"
+                wrap="true"
+                numLines="14"
+                color="0x303030FF">
+                <Font role="font" uri="font:SystemFontFile" size="28" />
+            </Label>
+            <Group id="weather" translation="[1000,10]" visible="false">
+                <Label width="550" height="45" text="TUSCALOOSA 35406" color="0x303030FF">
+                    <Font role="font" uri="font:SystemFontFile" size="28" />
+                </Label>
+                <Poster id="weatherIcon" translation="[0,55]" width="96" height="96" loadDisplayMode="scaleToFit" visible="false" />
+                <Label id="temperature" translation="[125,45]" width="390" height="100" text="--°C" color="0x303030FF">
+                    <Font role="font" uri="font:SystemFontFile" size="60" />
+                </Label>
+                <Label id="weatherDescription" translation="[0,160]" width="550" height="50" text="Loading weather..." color="0x303030FF">
+                    <Font role="font" uri="font:SystemFontFile" size="28" />
+                </Label>
+                <Label translation="[0,220]" width="650" height="45" text="NEXT 24 HOURS" color="0x303030FF">
+                    <Font role="font" uri="font:SystemFontFile" size="28" />
+                </Label>
+                <Label id="weatherRange" translation="[0,270]" width="650" height="40" color="0x303030FF">
+                    <Font role="font" uri="font:SystemFontFile" size="24" />
+                </Label>
+                <Group id="weatherChart" translation="[0,330]" />
+                <Group id="weatherForecast" translation="[0,520]" />
+                <Label translation="[0,780]" width="650" height="35" text="Weather: Open-Meteo (CC BY 4.0)" color="0x303030FF">
+                    <Font role="font" uri="font:SystemFontFile" size="18" />
+                </Label>
+            </Group>
+        </Group>
+        <Timer id="tick" duration="1" repeat="true" />
+        <Timer id="refresh" duration="300" repeat="true" />
+        <Timer id="agendaPageTimer" duration="20" repeat="true" />
+        <CalendarTask id="calendarTask" />
+        <WeatherTask id="weatherTask" />
+    </children>
+    <script type="text/brightscript" uri="pkg:/source/config.brs" />
+    <script type="text/brightscript" uri="pkg:/components/DisplaySchedule.brs" />
+    <script type="text/brightscript" uri="pkg:/components/NightScheduleScene.brs" />
+</component>

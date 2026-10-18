@@ -1,0 +1,15 @@
+{
+  "name": "roku-sleep-clock",
+  "version": "1.0.8",
+  "private": true,
+  "description": "Dim Roku screensavers with overnight clock mode, Outlook agenda and Celsius weather forecasts.",
+  "scripts": {
+    "test": "node scripts/test.cjs",
+    "check": "bsc --root-dir outlook-screensaver --copy-to-staging=false --create-package=false --diagnostic-level warn",
+    "build": "powershell -NoProfile -File package-all.ps1"
+  },
+  "devDependencies": {
+    "brighterscript": "0.71.1",
+    "brs": "0.45.0"
+  }
+}

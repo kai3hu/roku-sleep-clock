@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="CalendarTask" extends="Task">
+    <interface>
+        <field id="uri" type="string" />
+        <field id="agenda" type="string" />
+    </interface>
+    <script type="text/brightscript" uri="pkg:/components/CalendarParser.brs" />
+    <script type="text/brightscript" uri="pkg:/components/CalendarTask.brs" />
+</component>

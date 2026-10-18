@@ -1,0 +1,5 @@
+' Copy this file to config.brs and add your read-only Outlook ICS URL.
+' config.brs is ignored by Git. Never share a configured installation ZIP.
+function GetCalendarIcsUrl() as string
+    return ""
+end function

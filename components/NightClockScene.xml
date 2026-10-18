@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="NightClockScene" extends="Scene">
+    <children>
+        <Rectangle id="blackBackground" width="1920" height="1080" color="0x000000FF" />
+        <!-- Dim gray text on a fully opaque black background. -->
+        <Label
+            id="clock"
+            width="520"
+            height="150"
+            horizAlign="center"
+            vertAlign="center"
+            color="0x303030FF">
+            <Font role="font" uri="font:SystemFontFile" size="110" />
+        </Label>
+        <Timer id="tick" duration="1" repeat="true" />
+    </children>
+    <script type="text/brightscript" uri="pkg:/components/NightClockScene.brs" />
+</component>
