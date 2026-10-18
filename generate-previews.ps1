@@ -77,12 +77,13 @@ function Save-ScreenPreview {
         $graphics.TextRenderingHint = [Drawing.Text.TextRenderingHint]::AntiAliasGridFit
         if ($Agenda) {
             Write-PreviewText $graphics '23:48' 110 120 80 $Color
-            Write-PreviewText $graphics 'NEXT 7 DAYS' 30 132 235 $Color
-            Write-PreviewText $graphics 'Mon 10/19   09:00   Team meeting' 28 132 295 $Color
-            Write-PreviewText $graphics 'Tue 10/20   13:30   Project review' 28 132 345 $Color
-            Write-PreviewText $graphics 'Wed 10/21   18:00   Dinner' 28 132 395 $Color
-            Write-PreviewText $graphics 'Thu 10/22   10:00   Planning' 28 132 445 $Color
-            Write-PreviewText $graphics 'Fri 10/23   14:00   Weekly review' 28 132 495 $Color
+            Write-PreviewText $graphics 'TODAY  /  2 events  /  09:00 Team meeting' 24 132 235 $Color
+            Write-PreviewText $graphics 'NEXT 7 DAYS' 30 132 290 $Color
+            Write-PreviewText $graphics 'Mon 10/19   09:00   Team meeting' 28 132 350 $Color
+            Write-PreviewText $graphics 'Tue 10/20   13:30   Project review' 28 132 400 $Color
+            Write-PreviewText $graphics 'Wed 10/21   18:00   Dinner' 28 132 450 $Color
+            Write-PreviewText $graphics 'Thu 10/22   10:00   Planning' 28 132 500 $Color
+            Write-PreviewText $graphics 'Fri 10/23   14:00   Weekly review' 28 132 550 $Color
             Write-PreviewText $graphics 'TUSCALOOSA 35406' 28 1120 90 $Color
             $weatherState=$graphics.Save()
             $graphics.TranslateTransform(1120,145)

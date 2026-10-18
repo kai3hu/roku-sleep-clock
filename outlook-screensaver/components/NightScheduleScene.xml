@@ -6,9 +6,12 @@
             <Label id="clock" width="600" height="150" color="0x0C0C0CFF">
                 <Font role="font" uri="font:SystemFontFile" size="110" />
             </Label>
+            <Label id="today" translation="[12,155]" width="900" height="45" text="TODAY  /  Loading calendar..." color="0x0C0C0CFF">
+                <Font role="font" uri="font:SystemFontFile" size="24" />
+            </Label>
             <Label
                 id="heading"
-                translation="[12,155]"
+                translation="[12,210]"
                 width="880"
                 height="55"
                 text="NEXT 7 DAYS"
@@ -17,9 +20,9 @@
             </Label>
             <Label
                 id="agenda"
-                translation="[12,215]"
+                translation="[12,270]"
                 width="900"
-                height="700"
+                height="645"
                 wrap="true"
                 numLines="14"
                 color="0x0C0C0CFF">
@@ -65,17 +68,28 @@
                     <Font role="font" uri="font:SystemFontFile" size="20" />
                 </Label>
             </Group>
+            <Group id="telegram" visible="false" translation="[12,190]">
+                <Label width="1656" height="45" text="TELEGRAM  /  @DNSPODT  /  RECENT POSTS" color="0x0C0C0CFF">
+                    <Font role="font" uri="font:SystemFontFile" size="28" />
+                </Label>
+                <Group id="telegramGrid" translation="[0,75]" />
+                <Label id="telegramStatus" translation="[0,715]" width="1656" height="35" color="0x0C0C0CFF">
+                    <Font role="font" uri="font:SystemFontFile" size="20" />
+                </Label>
+            </Group>
         </Group>
         <Timer id="tick" duration="1" repeat="true" />
         <Timer id="refresh" duration="300" repeat="true" />
         <Timer id="agendaPageTimer" duration="20" repeat="true" />
-        <Timer id="rotationTimer" duration="180" repeat="false" />
+        <Timer id="rotationTimer" duration="120" repeat="false" />
         <CalendarTask id="calendarTask" />
         <WeatherTask id="weatherTask" />
         <WikiTask id="wikiTask" />
+        <TelegramTask id="telegramTask" />
     </children>
     <script type="text/brightscript" uri="pkg:/source/config.brs" />
     <script type="text/brightscript" uri="pkg:/components/DisplaySchedule.brs" />
     <script type="text/brightscript" uri="pkg:/components/WikiContent.brs" />
+    <script type="text/brightscript" uri="pkg:/components/TelegramContent.brs" />
     <script type="text/brightscript" uri="pkg:/components/NightScheduleScene.brs" />
 </component>

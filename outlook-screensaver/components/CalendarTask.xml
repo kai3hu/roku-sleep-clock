@@ -3,6 +3,7 @@
     <interface>
         <field id="uri" type="string" />
         <field id="agenda" type="string" />
+        <field id="today" type="string" />
     </interface>
     <script type="text/brightscript" uri="pkg:/components/CalendarParser.brs" />
     <script type="text/brightscript" uri="pkg:/components/CalendarTask.brs" />

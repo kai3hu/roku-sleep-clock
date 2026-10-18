@@ -5,6 +5,7 @@ sub init()
     m.clock = m.top.FindNode("clock")
     m.agenda = m.top.FindNode("agenda")
     m.heading = m.top.FindNode("heading")
+    m.today = m.top.FindNode("today")
     m.weatherGroup = m.top.FindNode("weather")
     m.displayColor = ""
     m.iconTint = ""
@@ -31,18 +32,38 @@ sub init()
     m.rotationPage = "agenda"
     m.wikiAttemptDay = ""
     m.wikiLoadedDay = ""
+    m.telegramGroup = m.top.FindNode("telegram")
+    m.telegramGrid = m.top.FindNode("telegramGrid")
+    m.telegramTask = m.top.FindNode("telegramTask")
+    m.telegramPosts = []
+    m.telegramPages = []
+    m.telegramPageIndex = 0
+    m.telegramPagesUpdated = ""
+    m.telegramUpdated = ""
+    m.telegramDelayed = false
+    m.telegramFontRegistry = CreateObject("roFontRegistry")
+    m.telegramLayoutFont = invalid
+    if m.telegramFontRegistry.Register("pkg:/fonts/NotoSansSC-Regular.otf")
+        families = m.telegramFontRegistry.GetFamilies()
+        for each family in families
+            if family.Instr("Noto Sans SC") >= 0 then m.telegramLayoutFont = m.telegramFontRegistry.GetFont(family, 26, false, false)
+        end for
+    end if
 
     m.tick.ObserveField("fire", "onTick")
     m.refresh.ObserveField("fire", "refreshData")
     m.calendarTask.ObserveField("agenda", "onAgendaChanged")
+    m.calendarTask.ObserveField("today", "onTodayChanged")
     m.weatherTask.ObserveField("result", "onWeatherChanged")
     m.pageTimer.ObserveField("fire", "nextAgendaPage")
     m.rotationTimer.ObserveField("fire", "rotateContent")
     m.wikiTask.ObserveField("result", "onWikiChanged")
+    m.telegramTask.ObserveField("result", "onTelegramChanged")
 
     updateClock()
     loadCalendar()
     loadWeather()
+    loadTelegram()
     m.tick.control = "start"
     m.refresh.control = "start"
     m.pageTimer.control = "start"
@@ -85,6 +106,7 @@ sub loadCalendar()
     url = GetCalendarIcsUrl()
     if url = ""
         m.agenda.text = "Add your Outlook ICS link in source/config.brs"
+        m.today.text = "TODAY  /  Calendar not configured"
         return
     end if
     if m.calendarTask.state = "run" then return
@@ -95,10 +117,56 @@ end sub
 sub refreshData()
     loadCalendar()
     loadWeather()
+    loadTelegram()
     now = CreateObject("roDateTime")
     now.ToLocalTime()
     day = wikiDateKey(now)
     if day <> m.wikiLoadedDay then loadWiki(day)
+end sub
+
+sub loadTelegram()
+    if m.telegramTask.state <> "run" then m.telegramTask.control = "run"
+end sub
+
+sub onTelegramChanged()
+    result = m.telegramTask.result
+    if result = invalid then return
+    if result.available
+        m.telegramPosts = result.posts
+        m.telegramUpdated = telegramLocalTime(result.fetchedAt)
+        m.telegramDelayed = false
+    else
+        m.telegramDelayed = true
+    end if
+    ' Render only at page entry so a refresh never interrupts reading.
+end sub
+
+sub renderTelegramPage()
+    m.telegramGrid.removeChildrenIndex(m.telegramGrid.getChildCount(), 0)
+    if m.telegramPageIndex >= m.telegramPages.Count()
+        m.telegramPages = telegramBuildPages(m.telegramPosts, m.telegramLayoutFont)
+        m.telegramPageIndex = 0
+        m.telegramPagesUpdated = m.telegramUpdated
+    end if
+    if m.telegramPages.Count() = 0 then return
+    cards = m.telegramPages[m.telegramPageIndex]
+    for each card in cards
+        post = card.post
+        metaText = telegramLocalTime(post.timestamp) + "  /  t.me/" + telegramChannel() + "/" + post.id.ToStr()
+        if card.continued then metaText = metaText + "  /  Continued"
+        meta = createWeatherLabel(m.telegramGrid, metaText, 20, 790, 30)
+        meta.translation = [card.x, card.y]
+        body = createWeatherLabel(m.telegramGrid, card.text, 26, 790, card.height)
+        body.translation = [card.x, card.y + 35]
+        body.wrap = true
+        body.numLines = card.lines
+        body.font.uri = "pkg:/fonts/NotoSansSC-Regular.otf"
+        body.font.fallbackGlyph = "u0020"
+    end for
+    status = "https://t.me/" + telegramChannel() + "  /  Page " + (m.telegramPageIndex + 1).ToStr() + " of " + m.telegramPages.Count().ToStr() + "  /  Checked " + m.telegramPagesUpdated + "  /  Full text"
+    if m.telegramDelayed then status = status + "  /  Update delayed"
+    m.top.FindNode("telegramStatus").text = status
+    m.telegramPageIndex = m.telegramPageIndex + 1
 end sub
 
 sub loadWiki(day as string)
@@ -137,23 +205,28 @@ sub rotateContent()
         setWikiArticles(m.pendingWikiArticles)
         m.pendingWikiArticles = invalid
     end if
-    phase = wikiNextPhase(m.rotationPage, m.nextWikiIndex, m.wikiArticles.Count())
+    phase = screensaverNextPhase(m.rotationPage, m.nextWikiIndex, m.wikiArticles.Count(), m.telegramPosts.Count() > 0)
     m.rotationPage = phase.page
     m.nextWikiIndex = phase.nextIndex
     isAgenda = phase.page = "agenda"
     m.heading.visible = isAgenda
+    m.today.visible = isAgenda
     m.agenda.visible = isAgenda
     m.weatherGroup.visible = isAgenda
-    m.wikiGroup.visible = not isAgenda
+    m.wikiGroup.visible = phase.page = "wiki"
+    m.telegramGroup.visible = phase.page = "telegram"
     if isAgenda
         m.pageTimer.control = "start"
-    else
+    else if phase.page = "wiki"
         m.pageTimer.control = "stop"
         article = m.wikiArticles[phase.index]
         m.top.FindNode("wikiHeading").text = "DAILY WIKIPEDIA  /  " + (phase.index + 1).ToStr() + " OF " + m.wikiArticles.Count().ToStr() + "  /  FEATURED " + article.featuredDate
         m.top.FindNode("wikiTitle").text = article.title
         m.top.FindNode("wikiExtract").text = article.extract
         m.top.FindNode("wikiUrl").text = article.url
+    else
+        m.pageTimer.control = "stop"
+        renderTelegramPage()
     end if
     m.rotationTimer.control = "stop"
     m.rotationTimer.duration = phase.duration
@@ -188,6 +261,10 @@ sub onAgendaChanged()
     m.agendaLines = m.calendarTask.agenda.Split(chr(10))
     m.agendaPage = 0
     showAgendaPage()
+end sub
+
+sub onTodayChanged()
+    m.today.text = m.calendarTask.today
 end sub
 
 sub nextAgendaPage()

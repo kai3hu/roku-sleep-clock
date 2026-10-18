@@ -27,6 +27,7 @@ Compress-Archive -Path @(
     (Join-Path $scheduleRoot 'manifest'),
     (Join-Path $scheduleRoot 'source'),
     (Join-Path $scheduleRoot 'components'),
+    (Join-Path $scheduleRoot 'fonts'),
     (Join-Path $scheduleRoot 'images')
 ) -DestinationPath $scheduleOutput -CompressionLevel Optimal
 

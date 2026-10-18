@@ -1,7 +1,49 @@
 ' Bounded seven-day iCalendar expansion, including Outlook recurrence overrides.
 function buildWeekAgenda(body as string, nowSeconds as integer) as string
+    rows = calAgendaRows(body, nowSeconds, nowSeconds + 7 * 86400)
+    if rows.Count() = 0 then return "No events in the next 7 days"
+    output = ""
+    for each row in rows
+        if output <> "" then output = output + chr(10)
+        output = output + row.text
+    end for
+    return output
+end function
+
+' Convert device-local wall time without assuming a 24-hour DST transition day.
+function calDeviceUtc(wall as integer) as integer
+    stamp = wall
+    for i = 0 to 2
+        date = calDate(stamp)
+        date.ToLocalTime()
+        stamp = wall - (date.AsSeconds() - stamp)
+    end for
+    return stamp
+end function
+
+function buildTodayAgenda(body as string, nowSeconds as integer) as string
+    local = calDate(nowSeconds)
+    local.ToLocalTime()
+    raw = local.GetYear().ToStr() + calTwo(local.GetMonth()) + calTwo(local.GetDayOfMonth())
+    wall = calWall(raw)
+    rows = calAgendaRows(body, calDeviceUtc(wall), calDeviceUtc(wall + 86400))
+    if rows.Count() = 0 then return "TODAY  /  No events"
+    first = rows[0]
+    for each row in rows
+        if row.finish > nowSeconds
+            first = row
+            exit for
+        end if
+    end for
+    countLabel = " event"
+    if rows.Count() <> 1 then countLabel = " events"
+    title = first.title
+    if len(title) > 28 then title = left(title, 25) + "..."
+    return "TODAY  /  " + rows.Count().ToStr() + countLabel + "  /  " + first.timeLabel + " " + title
+end function
+
+function calAgendaRows(body as string, windowStart as integer, windowEnd as integer) as object
     parsed = calParse(body)
-    windowEnd = nowSeconds + 7 * 86400
     rows = []
     overrides = {}
     for each event in parsed.events
@@ -21,7 +63,7 @@ function buildWeekAgenda(body as string, nowSeconds as integer) as string
             if duration < 0 then duration = 0
             candidates = [startWall]
             if event.rule.DoesExist("FREQ") and event.rid = ""
-                candidates = calExpand(event, startWall, nowSeconds - duration - 86400, windowEnd + 86400, parsed.zones)
+                candidates = calExpand(event, startWall, windowStart - duration - 86400, windowEnd + 86400, parsed.zones)
             end if
             for each extra in event.rdates
                 candidates.Push(calWall(extra))
@@ -37,7 +79,7 @@ function buildWeekAgenda(body as string, nowSeconds as integer) as string
                     if calUtc(exdate, event.tz, parsed.zones) = occurrence then excluded = true
                 end for
                 if event.rid = "" and overrides.DoesExist(key) then excluded = true
-                if not excluded and not seen.DoesExist(key) and occurrence < windowEnd and occurrence + duration > nowSeconds
+                if not excluded and not seen.DoesExist(key) and occurrence < windowEnd and occurrence + duration > windowStart
                     seen[key] = true
                     local = calDate(occurrence)
                     local.ToLocalTime()
@@ -47,19 +89,13 @@ function buildWeekAgenda(body as string, nowSeconds as integer) as string
                     label = days[local.GetDayOfWeek()] + " " + calTwo(local.GetMonth()) + "/" + calTwo(local.GetDayOfMonth())
                     title = event.summary
                     if Len(title) > 40 then title = Left(title, 37) + "..."
-                    rows.Push({ sort: occurrence, text: label + "   " + timeLabel + "   " + title })
+                    rows.Push({ sort: occurrence, finish:occurrence + duration, title:title, timeLabel:timeLabel, text: label + "   " + timeLabel + "   " + title })
                 end if
             end for
         end if
     end for
     rows.SortBy("sort")
-    if rows.Count() = 0 then return "No events in the next 7 days"
-    output = ""
-    for each row in rows
-        if output <> "" then output = output + chr(10)
-        output = output + row.text
-    end for
-    return output
+    return rows
 end function
 
 function calParse(body as string) as object

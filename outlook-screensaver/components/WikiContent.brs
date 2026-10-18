@@ -73,5 +73,5 @@ function wikiNextPhase(current as string, nextIndex as integer, count as integer
         index = nextIndex mod count
         return {page:"wiki", duration:60, index:index, nextIndex:(index + 1) mod count}
     end if
-    return {page:"agenda", duration:180, index:-1, nextIndex:nextIndex}
+    return {page:"agenda", duration:120, index:-1, nextIndex:nextIndex}
 end function

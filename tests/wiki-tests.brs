@@ -29,11 +29,14 @@ sub Main()
     m.rotationPage = "agenda"
     m.nextWikiIndex = 0
     m.heading = {visible:true}
+    m.today = {visible:true}
     m.agenda = {visible:true}
     m.weatherGroup = {visible:true}
     m.wikiGroup = {visible:false}
+    m.telegramPosts = []
+    m.telegramGroup = {visible:false}
     m.pageTimer = {control:"start"}
-    m.rotationTimer = {control:"start", duration:180}
+    m.rotationTimer = {control:"start", duration:120}
     m.top = {nodes:{wikiHeading:{text:""}, wikiTitle:{text:""}, wikiExtract:{text:""}, wikiUrl:{text:""}}, FindNode:findMockWikiNode}
     for i = 0 to 10
         rotateContent()
@@ -42,12 +45,12 @@ sub Main()
         check(m.wikiGroup.visible and not m.agenda.visible and not m.weatherGroup.visible, "Exactly one content page is visible")
         check(m.pageTimer.control = "stop", "Agenda pagination pauses on article pages")
         rotateContent()
-        check(m.rotationPage = "agenda" and m.rotationTimer.duration = 180, "Agenda returns for 180 seconds between articles")
+        check(m.rotationPage = "agenda" and m.rotationTimer.duration = 120, "Agenda returns for 120 seconds between articles")
         check(not m.wikiGroup.visible and m.agenda.visible and m.weatherGroup.visible, "Agenda and weather return together")
     end for
     m.wikiArticles = []
     rotateContent()
-    check(m.rotationPage = "agenda" and m.rotationTimer.duration = 180, "No articles means no empty page")
+    check(m.rotationPage = "agenda" and m.rotationTimer.duration = 120, "No articles means no empty page")
 
     m.wikiArticles = [article]
     m.nextWikiIndex = 0
@@ -58,7 +61,32 @@ sub Main()
     rotateContent()
     check(m.pendingWikiArticles = invalid and m.rotationPage = "agenda", "Pending data is installed at a page boundary")
     check(m.wikiLoadedDay = "2026-10-18", "Successful collection is marked for the local day")
+    ' Use an empty render snapshot to test page controls without native SG fonts.
+    m.telegramPosts = [{text:"Message"}]
+    m.telegramPages = [[], []]
+    m.telegramPageIndex = 0
+    m.telegramPagesUpdated = "10/18 01:00"
+    m.telegramDelayed = false
+    m.telegramGrid = {getChildCount:emptyGridCount, removeChildrenIndex:clearEmptyGrid}
+    m.top.nodes.telegramStatus = {text:""}
+    rotateContent()
+    check(m.rotationPage = "wiki" and not m.telegramGroup.visible and not m.today.visible, "Wiki hides Telegram and the today line")
+    rotateContent()
+    check(m.rotationPage = "telegram" and m.telegramGroup.visible and not m.wikiGroup.visible and not m.today.visible, "Telegram has exclusive content visibility")
+    check(m.rotationTimer.duration = 60 and m.telegramPageIndex = 1, "Telegram reads one continuation page per minute-long visit")
+    rotateContent()
+    check(m.rotationPage = "agenda" and m.today.visible and not m.telegramGroup.visible, "Today summary returns with the two-minute agenda")
+    rotateContent()
+    rotateContent()
+    check(m.telegramPageIndex = 2, "Next Telegram visit resumes the next page")
     print "WIKI_TEST_FAILURES="; m.failures
+end sub
+
+function emptyGridCount() as integer
+    return 0
+end function
+
+sub clearEmptyGrid(count as integer, index as integer)
 end sub
 
 function findMockWikiNode(id as string) as object
