@@ -1,4 +1,4 @@
-# Sleep Dashboard 2.0.1
+# Sleep Dashboard 2.0.2 (experimental)
 
 ## Install and launch
 
@@ -52,6 +52,8 @@ Choose small/medium/large text; clock size 90/110/140; 12/24-hour time; date vis
 
 Idle choices: Never, 60, 180, 300, 600, 1800 or 3600 seconds. Optional clock standby replaces black screen with just the clock. Automatic page changes and network refreshes are **not** remote activity and never reset this timer. Both article and agenda pagination stop while sleeping.
 
+**Keep running (Experimental; 10 s every hour)** is Off by default, including when loading old settings. Enable it and **Save and return** to opt in. It attempts one ten-second, local, silent black video every 3600 seconds, independently of page rotation and app black screen. It never loops continuously, resets the user-idle clock, changes pages, raises brightness or sends simulated remote keys. A real remote press stops the pulse before normal wake/navigation handling. Saving Off cancels it immediately. A failure waits until the next hourly attempt. This is unverified on the target firmware; see [the experiment checklist](hourly-experiment.md). Do not assume a successful playback prevents idle exit.
+
 Night start/end are local hours. Day and night each have Extra dim, Low and Medium brightness. Gray and Warm gray text tones leave the background opaque black. Optional temporary reading boost raises text brightness only during manual browsing. These controls cannot adjust the television's hardware backlight or guarantee prevention of image retention.
 
 ### Rotation
@@ -72,8 +74,10 @@ Toggle the three Kagi categories independently; all off means no news requests. 
 
 Shows update state for Outlook, weather, news and Telegram. Refresh all or one enabled data source manually. Disabled sources are not forced on by Refresh. Settings saves run on a Task, coalesce pending changes, and retry failed storage writes. Layout previews and keyboard drafts are never written as committed settings.
 
+The status footer also shows hourly pulse state and the previous exit reason if Roku supplied it. **Test keep-running pulse now** requires the saved experiment switch to be On. A manual test reschedules the next automatic pulse for one hour later; it does not enable the switch or save any draft settings. Playback completion is deliberately labeled **effect unverified**, not proof of a fix.
+
 ## Verification and device limitations
 
 `npm test` checks settings validation, page ordering and last-page protection, data dependencies, night hours, wake-key consumption, cancellation/save semantics, source-generation checks, Telegram-only refresh rotation, Celsius/Fahrenheit conversion and existing screensaver/calendar/news/Telegram behavior. Static guards reject render-thread registry/network/font-metric calls. The app build separately compiles its generated scene and verifies a normal Home-screen manifest/Main entry point.
 
-Desktop tests and offline layout simulations do not replace a Roku device test. After installing, verify remote focus, storage across app relaunch, the chosen idle boundary, a long article across multiple pages, and wake after both app black screen and any Roku system screensaver. Check TV sleep/power-saving settings separately. This app does not prevent the system screensaver, keep the hardware awake with simulated keys, run after Home exits it, or guarantee automatic app launch after power-on.
+Desktop tests and offline layout simulations do not replace a Roku device test. After installing, verify remote focus, storage across app relaunch, the chosen idle boundary, a long article across multiple pages, and wake after both app black screen and any Roku system screensaver. Check TV sleep/power-saving settings separately. This app does not keep the hardware awake with simulated keys, run after Home exits it, or guarantee automatic app launch after power-on. The hourly media experiment suppresses the system screensaver only during its short playback; there is no guarantee it resets the separate idle-exit policy.

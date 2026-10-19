@@ -163,6 +163,7 @@ sub Main()
     appMenuKey("OK")
     check(m.appSettings.enabled.clock and m.appMenuNote.Instr("at least one") > 0, "Page settings UI refuses to switch off the last enabled page")
     testCalendarRangeAndCity()
+    testKeepRunning()
     print "APP_TEST_FAILURES="; m.failures
 end sub
 
@@ -249,6 +250,9 @@ sub initMockApp()
     m.appStatus = {calendar:"Ready",weather:"Ready",news:"Ready",telegram:"Ready"}
     m.appIdleClock = mockClock(0)
     m.appUptime = mockClock(0)
+    appResetKeepRunningState()
+    m.appKeepVideo = {state:"stopped",control:"stop",content:invalid,errorCode:0}
+    m.appKeepContent = {url:"pkg:/media/hourly-black.mp4",streamFormat:"mp4"}
     m.appRotationClock = mockClock(0)
     m.appArmedSeconds = 120
     m.appRemaining = 120
@@ -292,7 +296,7 @@ sub initMockApp()
     for each id in ["weatherLocation","weatherChart","weatherForecast","weatherRange","weatherForecastHeading","newsTitle","newsSummary","newsUrl","newsHeading","newsAttribution","telegramHeading","telegramStatus","telegramAttribution"]
         nodes[id] = mockNode()
     end for
-    m.top = {nodes:nodes,FindNode:mockFindNode,setFocus:mockFocus}
+    m.top = {nodes:nodes,FindNode:mockFindNode,setFocus:mockFocus,lastExitReason:"Unknown"}
 end sub
 
 function mockNode() as object

@@ -1,14 +1,16 @@
 # Sleep Dashboard and Sleep Clock for Roku
 
-A remote-controlled, sleep-friendly Roku app and two separate screensavers are included. The app is **Sleep Dashboard 2.0.1**; the screensaver versions remain available independently.
+A remote-controlled, sleep-friendly Roku app and two separate screensavers are included. The latest source is **Sleep Dashboard 2.0.2 (experimental)**; the screensaver versions remain available independently.
 
 ## Sleep Dashboard app
 
-Version 2.0.1 fixes agenda data disappearing after a range/filter change: existing rows remain visible during refresh and identical responses still repaint the scene. Weather headings show the resolved city name (Tuscaloosa for default ZIP 35406), never the lookup ZIP; city metadata is retained across unit changes.
+Version 2.0.2 adds an opt-in hourly keep-running experiment: one local, silent black video plays for up to ten seconds every 60 minutes, never continuously. This does **not** yet prove prevention of Roku's two-hour `EXIT_IDLE_AUTO_EXIT`. Build `./package-dashboard.ps1 -Experimental` for `dist/sleep-dashboard-experimental-roku.zip`; this leaves the existing stable ZIP untouched. See [the experiment and device-test checklist](docs/hourly-experiment.md) before enabling it.
+
+Version 2.0.1 fixed agenda data disappearing after a range/filter change: existing rows remain visible during refresh and identical responses still repaint the scene. Weather headings show the resolved city name (Tuscaloosa for default ZIP 35406), never the lookup ZIP; city metadata is retained across unit changes.
 
 Install `dist/sleep-dashboard-roku.zip` to use a normal Roku Home-screen app, not a system screensaver. It includes saved page switches/order, startup-page choice, Balanced / Agenda Focus / Minimal dashboard layouts, font and clock sizes, day/night schedules and text colors, automatic/manual rotation, configurable reading speed, and idle black screen with remote wake. Settings use an in-app keyboard and a live layout preview; choose **Save** to commit or **Cancel** to discard changes. The default enabled pages are Dashboard, News and Telegram; Agenda, Weather and Clock can be enabled separately.
 
-The default idle timeout is five minutes. Black screen hides the clock, content and controls and pauses all page timers; enabled feeds still update. The first remote press only wakes the app, and repeats of that held key are consumed until release. It restores the page, article position and remaining reading time. This does **not** turn off the television panel or backlight. Roku's own screensaver, standby and power settings still apply; the app does not fake keypresses, disable system protections or promise background operation after Home/Power exits it.
+The default idle timeout is five minutes. Black screen hides the clock, content and controls and pauses all page timers; enabled feeds still update. The first remote press only wakes the app, and repeats of that held key are consumed until release. It restores the page, article position and remaining reading time. This does **not** turn off the television panel or backlight. Roku's own idle-exit, standby and power settings still apply; the app does not fake keypresses or promise background operation after Home/Power exits it. The disabled-by-default media experiment temporarily suppresses the system screensaver during each short playback; it is not a supported keep-awake API or a promise of store certification.
 
 **Controls:** Left/Right switches enabled pages; Up/Down changes items or reading pages; OK opens navigation; `*` opens settings; Play/Pause toggles automatic rotation. Back closes the current menu or returns to Dashboard; Back at Dashboard exits normally. When Dashboard is disabled, Back from a content page exits. Home and Power retain their system behavior.
 

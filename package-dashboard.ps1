@@ -1,3 +1,4 @@
+param([switch]$Experimental)
 $ErrorActionPreference = 'Stop'
 $projectRoot = $PSScriptRoot
 $sharedRoot = Join-Path $projectRoot 'outlook-screensaver'
@@ -19,7 +20,7 @@ foreach ($name in @('menu-hd.png','menu-fhd.png')) {
 # Mechanically specialize the shared scene, avoiding two drifting copies of its UI.
 $scene = [xml](Get-Content -LiteralPath (Join-Path $sharedRoot 'components/NightScheduleScene.xml') -Raw)
 $scene.component.SetAttribute('name','SleepDashboardScene')
-$scene.component.interface.field.SetAttribute('value','true')
+$scene.SelectSingleNode('/component/interface/field[@id="interactive"]').SetAttribute('value','true')
 $xmlSettings = [Xml.XmlWriterSettings]::new()
 $xmlSettings.Encoding = [Text.UTF8Encoding]::new($false)
 $xmlSettings.Indent = $true
@@ -32,6 +33,11 @@ if (-not (Test-Path -LiteralPath $compiler)) {throw 'Run npm install before buil
 if ($LASTEXITCODE -ne 0) {throw 'Dashboard compilation failed'}
 $outputDirectory = Join-Path $projectRoot 'dist'
 New-Item -ItemType Directory -Force -Path $outputDirectory | Out-Null
-$output = Join-Path $outputDirectory 'sleep-dashboard-roku.zip'
-Compress-Archive -Path @((Join-Path $stage 'manifest'),(Join-Path $stage 'source'),(Join-Path $stage 'components'),(Join-Path $stage 'fonts'),(Join-Path $stage 'images')) -DestinationPath $output -Force -CompressionLevel Optimal
+$outputName = 'sleep-dashboard-roku.zip'
+if ($Experimental) {$outputName = 'sleep-dashboard-experimental-roku.zip'}
+$output = Join-Path $outputDirectory $outputName
+$media = Join-Path $projectRoot 'dashboard-app/media'
+if (-not (Test-Path -LiteralPath (Join-Path $media 'hourly-black.mp4'))) {throw 'Missing hourly-black.mp4; see dashboard-app/media/README.md.'}
+Copy-Item -LiteralPath $media -Destination $stage -Recurse -Force
+Compress-Archive -Path @((Join-Path $stage 'manifest'),(Join-Path $stage 'source'),(Join-Path $stage 'components'),(Join-Path $stage 'fonts'),(Join-Path $stage 'images'),(Join-Path $stage 'media')) -DestinationPath $output -Force -CompressionLevel Optimal
 Write-Host "Created $output"

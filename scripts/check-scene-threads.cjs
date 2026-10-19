@@ -31,3 +31,15 @@ assert(/sub Main\(/i.test(entry) && !/RunScreenSaver/i.test(entry), 'Interactive
 const calendar = fs.readFileSync(path.join(directory, 'CalendarTask.xml'), 'utf8');
 assert(/<field\b(?=[^>]*\bid="agenda")(?=[^>]*\balwaysNotify="true")[^>]*\/>/i.test(calendar),
   'Repeated calendar text must still notify the scene after a range/filter change');
+const pulse = fs.readFileSync(path.join(directory, 'AppKeepRunning.brs'), 'utf8');
+assert(/m\.top\.insertChild\(m\.appKeepVideo, 0\)/.test(pulse), 'Media must stay below the opaque black background');
+assert(/m\.appKeepVideo\.loop = false/.test(pulse), 'Hourly experiment must never loop continuously');
+assert(/m\.appKeepVideo\.enableUI = false/.test(pulse) && /m\.appKeepVideo\.mute = true/.test(pulse),
+  'Playback must not display player controls or produce sound');
+assert(!/appWake\(|appShowPage\(|appPauseForInput\(|appIdleClock\.Mark\(|setFocus\(/i.test(pulse),
+  'Media pulses cannot wake, navigate, focus a player, or impersonate remote activity');
+assert(!/https?:\/\//.test(pulse), 'Keep-running experiment must have no network stream fallback');
+assert(!/UpdateLastKeypressTime|:8060|keypress\//i.test(pulse + entry), 'No simulated keypress keep-alive');
+assert(!/<Video\b/i.test(fs.readFileSync(path.join(directory, 'NightScheduleScene.xml'), 'utf8')),
+  'Standalone screensaver must not instantiate a media player');
+console.log('PASS: Hourly media pulse stays local, bounded, opt-in and separate from user activity.');

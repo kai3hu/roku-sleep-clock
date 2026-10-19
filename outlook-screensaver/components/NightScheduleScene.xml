@@ -2,6 +2,7 @@
 <component name="NightScheduleScene" extends="Scene">
     <interface>
         <field id="interactive" type="boolean" value="false" />
+        <field id="lastExitReason" type="string" value="Unknown" />
     </interface>
     <children>
         <Rectangle id="blackBackground" width="1920" height="1080" color="0x000000FF" />
@@ -101,6 +102,7 @@
     <script type="text/brightscript" uri="pkg:/components/SharedContent.brs" />
     <script type="text/brightscript" uri="pkg:/components/TelegramContent.brs" />
     <script type="text/brightscript" uri="pkg:/components/AppSettings.brs" />
+    <script type="text/brightscript" uri="pkg:/components/AppKeepRunning.brs" />
     <script type="text/brightscript" uri="pkg:/components/AppControls.brs" />
     <script type="text/brightscript" uri="pkg:/components/NightScheduleScene.brs" />
 </component>

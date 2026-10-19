@@ -24,6 +24,7 @@ sub initDashboardApp()
     m.appIdleClock.Mark()
     m.appUptime = CreateObject("roTimespan")
     m.appUptime.Mark()
+    appInitKeepRunning()
     m.appRotationClock = CreateObject("roTimespan")
     m.appRotationClock.Mark()
     m.appChrome = m.top.createChild("Group")
@@ -49,6 +50,7 @@ sub onAppSettingsStored()
         m.appCommitted = appNormalizeSettings(result.settings)
         m.appPlaying = m.appSettings.autoplay
         m.appReady = true
+        appApplyKeepRunning()
         appShowPage(appStartupPage(m.appSettings), false)
         refreshData()
     else if result.success <> true
@@ -116,6 +118,7 @@ end sub
 
 sub appTick()
     if not m.appReady then return
+    appKeepRunningTick()
     idle = int(m.appIdleClock.TotalMilliseconds() / 1000)
     if appShouldSleep(m.appSettings, idle, m.appSleeping) then appSleep()
     if not m.appSleeping and m.appMenu = ""
@@ -223,6 +226,7 @@ function onKeyEvent(key as string, press as boolean) as boolean
         return false
     end if
     if not m.appReady then return true
+    appInterruptKeepRunning()
     if m.appWakeKey = key then return true
     m.appWakeKey = ""
     if m.appSleeping
@@ -573,12 +577,18 @@ sub appDrawMenu()
     if m.appMenu = "Pages" then note = "OK: enable/disable   Left/Right: reorder page   Back: return"
     if m.appMenu = "Status"
         note = "Outlook: " + m.appStatus.calendar + chr(10) + "Weather: " + m.appStatus.weather + "  /  News: " + m.appStatus.news + chr(10) + "Telegram: " + m.appStatus.telegram
+        note = note + chr(10) + "Keep running: " + m.appKeepStatus + chr(10) + "Previous exit: " + m.top.lastExitReason
     end if
     if m.appMenuNote <> "" then note = m.appMenuNote + chr(10) + note
     footer = createWeatherLabel(m.appOverlay, note, 20, 830, 170)
     footer.translation = [60,825]
     footer.wrap = true
     footer.numLines = 6
+    if m.appMenu = "Status"
+        footer.font.size = 18
+        footer.height = 185
+        footer.numLines = 8
+    end if
     footer.color = "0x585858FF"
     page = createWeatherLabel(m.appOverlay, "Page " + (int(m.appMenuIndex / 8) + 1).ToStr() + " / " + int((rows.Count() + 7) / 8).ToStr() + "  |  Changes are saved only with Save.", 18, 830, 35)
     page.translation = [60,1015]
@@ -672,6 +682,8 @@ sub appMenuAction(action as string)
     else if action = "refreshAll"
         refreshData()
         m.appMenuNote = "Refreshing sources used by enabled pages."
+    else if action = "testKeepRunning"
+        appTestKeepRunning()
     else
         source = lcase(action.Replace("refresh", ""))
         m.appPendingRefresh[source] = true
@@ -712,6 +724,7 @@ sub appCloseMenu(save as boolean)
 end sub
 
 sub appSettingsApplied(oldSettings as object)
+    appApplyKeepRunning()
     for each source in ["calendar","weather","news","telegram"]
         changed = appSourceKey(source, oldSettings) <> appSourceKey(source, m.appSettings)
         if changed
