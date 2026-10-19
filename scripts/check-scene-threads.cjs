@@ -6,7 +6,7 @@ const directory = path.join(root, 'components');
 
 // Desktop interpreters do not enforce Roku's native-component thread restrictions.
 // Catch forbidden component creation in render scripts and Task initialization.
-const forbidden = /CreateObject\s*\(\s*"(roFontRegistry|roFont|roUrlTransfer|roMessagePort|roFileSystem|roScreen|roCompositor)"/i;
+const forbidden = /CreateObject\s*\(\s*"(roFontRegistry|roFont|roUrlTransfer|roMessagePort|roFileSystem|roRegistrySection|roScreen|roCompositor)"/i;
 for (const file of fs.readdirSync(directory).filter(file => file.endsWith('.xml'))) {
   const xml = fs.readFileSync(path.join(directory, file), 'utf8');
   const task = /extends="Task"/i.test(xml);
@@ -23,3 +23,8 @@ assert(!/telegramBuildPages\s*\(/i.test(scene), 'Pagination must run on TASK, no
 const task = fs.readFileSync(path.join(directory, 'TelegramTask.brs'), 'utf8');
 assert(/pages\s*=\s*telegramBuildPages\s*\(/i.test(task), 'Telegram task must prepare pages before publishing data');
 console.log('PASS: Render startup contains no forbidden native components or Telegram pagination.');
+const manifest = fs.readFileSync(path.join(root, '..', 'dashboard-app', 'manifest'), 'utf8');
+assert(/^title=Sleep Dashboard$/m.test(manifest), 'App must have a normal Roku Home tile');
+assert(!/^screensaver_title=/m.test(manifest), 'Interactive app must not advertise a screensaver entry point');
+const entry = fs.readFileSync(path.join(root, '..', 'dashboard-app', 'source', 'main.brs'), 'utf8');
+assert(/sub Main\(/i.test(entry) && !/RunScreenSaver/i.test(entry), 'Interactive package uses Main, not RunScreenSaver');

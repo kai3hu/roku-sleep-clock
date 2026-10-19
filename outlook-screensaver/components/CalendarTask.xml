@@ -2,6 +2,9 @@
 <component name="CalendarTask" extends="Task">
     <interface>
         <field id="uri" type="string" />
+        <field id="days" type="integer" value="7" />
+        <field id="showEnded" type="boolean" value="true" />
+        <field id="success" type="boolean" value="false" />
         <field id="agenda" type="string" />
         <field id="today" type="string" alwaysNotify="true" />
         <field id="todayItems" type="array" alwaysNotify="true" />

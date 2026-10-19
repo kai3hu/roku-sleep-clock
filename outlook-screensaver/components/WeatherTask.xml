@@ -2,6 +2,7 @@
 <component name="WeatherTask" extends="Task">
     <interface>
         <field id="result" type="assocarray" alwaysNotify="true" />
+        <field id="location" type="string" value="35406" />
     </interface>
     <script type="text/brightscript" uri="pkg:/components/WeatherTask.brs" />
 </component>

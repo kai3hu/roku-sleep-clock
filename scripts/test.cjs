@@ -8,6 +8,18 @@ const suites = [
   {
     files: [
       'outlook-screensaver/components/DisplaySchedule.brs',
+      'outlook-screensaver/components/SharedContent.brs',
+      'outlook-screensaver/components/TelegramContent.brs',
+      'outlook-screensaver/components/AppSettings.brs',
+      'outlook-screensaver/components/AppControls.brs',
+      'outlook-screensaver/components/NightScheduleScene.brs',
+      'tests/app-tests.brs'
+    ],
+    success: /APP_TEST_FAILURES=\s*0/
+  },
+  {
+    files: [
+      'outlook-screensaver/components/DisplaySchedule.brs',
       'outlook-screensaver/components/CalendarParser.brs',
       'outlook-screensaver/components/WeatherTask.brs',
       'tests/logic-tests.brs'

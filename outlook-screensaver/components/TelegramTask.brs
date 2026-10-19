@@ -3,12 +3,17 @@ sub init()
 end sub
 
 sub downloadTelegram()
-    html = telegramDownload("https://t.me/s/" + telegramChannel(), 20000)
+    channel = m.top.channel
+    if not CreateObject("roRegex", "^[A-Za-z][A-Za-z0-9_]{3,31}$", "").IsMatch(channel)
+        m.top.result = {available:false}
+        return
+    end if
+    html = telegramDownload("https://t.me/s/" + channel, 20000)
     if html = invalid
         m.top.result = {available:false}
         return
     end if
-    parsed = telegramParsePosts(html, telegramChannel())
+    parsed = telegramParsePosts(html, channel)
     posts = []
     nextCache = {}
     if m.articleCache = invalid then m.articleCache = {}
@@ -17,7 +22,7 @@ sub downloadTelegram()
     fetchedAt = now.ToISOString()
     seconds = now.AsSeconds()
     for each post in parsed
-        if post.sourceOnly
+        if post.sourceOnly and m.top.sourceArticles
             path = telegramTelegraphPath(post.articleUrl)
             article = invalid
             cached = m.articleCache[post.articleUrl]
@@ -56,11 +61,11 @@ sub downloadTelegram()
             if registry.Register("pkg:/fonts/NotoSansSC-Regular.otf")
                 families = registry.GetFamilies()
                 for each family in families
-                    if family.Instr("Noto Sans SC") >= 0 then font = registry.GetFont(family, 30, false, false)
+                    if family.Instr("Noto Sans SC") >= 0 then font = registry.GetFont(family, m.top.fontSize, false, false)
                 end for
             end if
         end if
-        pages = telegramBuildPages(posts, font)
+        pages = telegramBuildPages(posts, font, m.top.fontSize)
     end if
     m.top.result = {available:pages.Count() > 0, posts:posts, pages:pages, fetchedAt:fetchedAt, delayed:delayed}
 end sub

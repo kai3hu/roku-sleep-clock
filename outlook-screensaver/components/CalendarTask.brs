@@ -45,12 +45,22 @@ sub downloadCalendar()
     end if
 
     now = CreateObject("roDateTime")
-    m.top.todayItems = calTodayRows(body, now.AsSeconds())
+    rows = calTodayRows(body, now.AsSeconds())
+    if not m.top.showEnded
+        visible = []
+        for each row in rows
+            if row.finish > now.AsSeconds() then visible.Push(row)
+        end for
+        rows = visible
+    end if
+    m.top.success = true
+    m.top.todayItems = rows
     m.top.today = buildTodayAgenda(body, now.AsSeconds())
-    m.top.agenda = buildWeekAgenda(body, now.AsSeconds())
+    m.top.agenda = buildWeekAgenda(body, now.AsSeconds(), m.top.days)
 end sub
 
 sub calendarFailure(message as string)
+    m.top.success = false
     m.top.todayItems = []
     m.top.today = "TODAY  /  Calendar unavailable"
     m.top.agenda = message

@@ -82,14 +82,14 @@ function telegramParsePosts(html as string, channel as string) as object
     return result
 end function
 
-function telegramTextWidth(text as string, font as dynamic) as integer
+function telegramTextWidth(text as string, font as dynamic, size = 30 as integer) as integer
     if font <> invalid then return font.GetOneLineWidth(text, 100000)
     width = 0
     for i = 1 to len(text)
         if asc(mid(text, i, 1)) > 255
-            width = width + 34
+            width = width + size + 4
         else
-            width = width + 34
+            width = width + size + 4
         end if
     end for
     return width
@@ -102,7 +102,7 @@ function telegramLastSpace(text as string) as integer
     return -1
 end function
 
-function telegramWrapLines(text as string, font as dynamic, width = 780 as integer) as object
+function telegramWrapLines(text as string, font as dynamic, width = 780 as integer, size = 30 as integer) as object
     lines = []
     line = ""
     for i = 1 to len(text)
@@ -110,7 +110,7 @@ function telegramWrapLines(text as string, font as dynamic, width = 780 as integ
         if char = chr(10)
             lines.Push(line.Trim())
             line = ""
-        else if telegramTextWidth(line + char, font) > width and line <> ""
+        else if telegramTextWidth(line + char, font, size) > width and line <> ""
             splitAt = telegramLastSpace(line)
             carry = char
             if splitAt > len(line) / 2
@@ -128,15 +128,16 @@ function telegramWrapLines(text as string, font as dynamic, width = 780 as integ
 end function
 
 ' Each message owns the entire reading area, including all continuation pages.
-function telegramBuildPages(posts as object, font as dynamic) as object
+function telegramBuildPages(posts as object, font as dynamic, size = 30 as integer) as object
     pages = []
-    lineHeight = 46
+    minimumHeight = int(size * 1.5) + 1
+    lineHeight = minimumHeight
     if font <> invalid then lineHeight = font.GetOneLineHeight() + 2
-    if lineHeight < 46 then lineHeight = 46
+    if lineHeight < minimumHeight then lineHeight = minimumHeight
     capacity = int(600 / lineHeight)
     if capacity < 1 then capacity = 1
     for each post in posts
-        lines = telegramWrapLines(post.text, font, 1600)
+        lines = telegramWrapLines(post.text, font, 1600, size)
         offset = 0
         parts = int((lines.Count() + capacity - 1) / capacity)
         baseSize = 0

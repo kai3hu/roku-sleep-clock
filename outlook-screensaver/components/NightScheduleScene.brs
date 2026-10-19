@@ -47,6 +47,7 @@ sub init()
     m.telegramReadingClock = invalid
     m.telegramReadingDuration = 60
     m.telegramStatusBase = ""
+    m.interactive = m.top.interactive = true
 
     m.tick.ObserveField("fire", "onTick")
     m.refresh.ObserveField("fire", "refreshData")
@@ -59,6 +60,7 @@ sub init()
     m.newsTask.ObserveField("result", "onNewsChanged")
     m.telegramTask.ObserveField("result", "onTelegramChanged")
 
+    if m.interactive then initDashboardApp()
     updateClock()
     loadCalendar()
     loadWeather()
@@ -66,13 +68,19 @@ sub init()
     loadNews()
     m.tick.control = "start"
     m.refresh.control = "start"
-    m.pageTimer.control = "start"
-    m.rotationTimer.control = "start"
+    if not m.interactive
+        m.pageTimer.control = "start"
+        m.rotationTimer.control = "start"
+    end if
 end sub
 
 sub onTick()
     updateClock()
-    updateTelegramCountdown()
+    if m.interactive = true
+        appTick()
+    else
+        updateTelegramCountdown()
+    end if
 end sub
 
 sub updateClock()
@@ -82,13 +90,16 @@ sub updateClock()
     minute = now.GetMinutes()
     m.clock.text = twoDigits(hour) + ":" + twoDigits(minute)
     applyDisplaySchedule(hour)
+    if m.interactive = true then appUpdateClock(now)
 end sub
 
 sub applyDisplaySchedule(localHour as integer)
     color = scheduleTextColor(localHour)
+    if m.interactive = true then color = appTextColor(m.appSettings, localHour, m.appManualPaused = true)
     if m.displayColor = color then return
     m.displayColor = color
     m.iconTint = scheduleIconTint(localHour)
+    if m.interactive = true then m.iconTint = appIconTint(m.appSettings, localHour, m.appManualPaused = true)
     applyContentPalette(m.content, m.displayColor, m.iconTint)
 end sub
 
@@ -102,14 +113,31 @@ sub applyContentPalette(node as object, color as string, iconTint as string)
 end sub
 
 sub loadCalendar()
+    if m.interactive = true
+        if not appCanFetch("calendar") then return
+    end if
     url = GetCalendarIcsUrl()
+    if m.interactive = true
+        url = m.appCommitted.calendarUrl
+        if m.appCommitted.useBundledCalendar then url = GetCalendarIcsUrl()
+    end if
     if url = ""
         m.agenda.text = "Add your Outlook ICS link in source/config.brs"
         m.today.text = "TODAY  /  Calendar not configured"
         m.todayBody.text = "Add your Outlook calendar to see today's schedule."
+        if m.interactive = true
+            m.appStatus.calendar = "Not configured"
+            m.appPendingRefresh.calendar = false
+            m.agenda.text = "Configure Outlook in Settings > Content."
+        end if
         return
     end if
     if m.calendarTask.state = "run" then return
+    if m.interactive = true
+        m.calendarTask.days = m.appCommitted.calendarDays
+        m.calendarTask.showEnded = m.appCommitted.showEnded
+        appRequestStarted("calendar")
+    end if
     m.calendarTask.uri = url
     m.calendarTask.control = "run"
 end sub
@@ -122,10 +150,21 @@ sub refreshData()
 end sub
 
 sub loadTelegram()
+    if m.interactive = true
+        if not appCanFetch("telegram") then return
+        if m.telegramTask.state = "run" then return
+        m.telegramTask.channel = m.appCommitted.telegramChannel
+        m.telegramTask.sourceArticles = m.appCommitted.sourceArticles
+        m.telegramTask.fontSize = appTelegramFontSize(m.appCommitted)
+        appRequestStarted("telegram")
+    end if
     if m.telegramTask.state <> "run" then m.telegramTask.control = "run"
 end sub
 
 sub onTelegramChanged()
+    if m.interactive = true
+        if not appAcceptResult("telegram") then return
+    end if
     result = m.telegramTask.result
     if result = invalid then return
     if result.available
@@ -138,6 +177,7 @@ sub onTelegramChanged()
     else
         m.telegramDelayed = true
     end if
+    if m.interactive = true then appDataArrived("telegram", result.available)
     ' Render only at page entry so a refresh never interrupts reading.
 end sub
 
@@ -156,20 +196,26 @@ function renderTelegramPage() as integer
         post = card.post
         kind = "MESSAGE"
         if post.isArticle = true then kind = "ARTICLE"
-        m.top.FindNode("telegramHeading").text = "TELEGRAM  /  @" + telegramChannel() + "  /  " + kind
+        channel = telegramChannel()
+        bodySize = 30
+        if m.interactive = true
+            channel = m.appSettings.telegramChannel
+            bodySize = appTelegramFontSize(m.appSettings)
+        end if
+        m.top.FindNode("telegramHeading").text = "TELEGRAM  /  @" + channel + "  /  " + kind
         metaText = telegramLocalTime(post.timestamp) + "  /  Page " + card.part.ToStr() + " of " + card.parts.ToStr()
         if card.continued then metaText = metaText + "  /  Continued"
         meta = createWeatherLabel(m.telegramGrid, metaText, 20, card.width, 30)
         meta.translation = [0, 0]
         ' Render the worker's exact lines; SceneGraph must not wrap them again.
         for i = 0 to card.lineTexts.Count() - 1
-            body = createWeatherLabel(m.telegramGrid, card.lineTexts[i], 30, card.width, card.lineHeight)
+            body = createWeatherLabel(m.telegramGrid, card.lineTexts[i], bodySize, card.width, card.lineHeight)
             body.translation = [0, 42 + i * card.lineHeight]
             body.wrap = false
             body.font.uri = "pkg:/fonts/NotoSansSC-Regular.otf"
             body.font.fallbackGlyph = "u0020"
         end for
-        attribution = "t.me/" + telegramChannel() + "/" + post.id.ToStr()
+        attribution = "t.me/" + channel + "/" + post.id.ToStr()
         if post.isArticle = true
             attribution = "Article: telegra.ph  /  " + attribution
             if post.author <> "" then attribution = attribution + "  /  " + post.author
@@ -197,16 +243,37 @@ sub updateTelegramCountdown()
 end sub
 
 sub loadNews()
+    if m.interactive = true
+        if not appCanFetch("news") then return
+        if m.newsTask.state = "run" then return
+        categories = []
+        if m.appCommitted.technology then categories.Push("Technology")
+        if m.appCommitted.science then categories.Push("Science")
+        if m.appCommitted.economy then categories.Push("Economy")
+        m.newsTask.categories = categories
+        appRequestStarted("news")
+    end if
     if m.newsTask.state = "run" then return
     m.newsTask.control = "run"
 end sub
 
 sub onNewsChanged()
+    if m.interactive = true
+        if not appAcceptResult("news") then return
+    end if
     result = m.newsTask.result
     if result = invalid then return
     m.newsDelayed = result.delayed
     if type(result.stories) <> "roArray" then return
-    if result.stories.Count() = 0 then return
+    if result.stories.Count() = 0
+        if m.interactive = true then appDataArrived("news", false)
+        return
+    end if
+    if m.interactive = true
+        m.appPendingNews = result.stories
+        appDataArrived("news", not result.delayed)
+        return
+    end if
     if m.rotationPage = "news"
         ' Keep the current article stable until its full minute has elapsed.
         m.pendingNewsStories = result.stories
@@ -227,6 +294,10 @@ sub setNewsStories(articles as object)
 end sub
 
 sub rotateContent()
+    if m.interactive = true
+        appRotate()
+        return
+    end if
     if m.rotationPage = "telegram"
         if telegramHasContinuation(m.telegramPages, m.telegramPageIndex)
             duration = renderTelegramPage()
@@ -272,12 +343,29 @@ sub rotateContent()
 end sub
 
 sub loadWeather()
+    if m.interactive = true
+        if not appCanFetch("weather") then return
+        if m.weatherTask.state = "run" then return
+        m.weatherTask.location = m.appCommitted.weatherLocation
+        appRequestStarted("weather")
+    end if
     if m.weatherTask.state <> "run" then m.weatherTask.control = "run"
 end sub
 
 sub onWeatherChanged()
+    if m.interactive = true
+        if not appAcceptResult("weather") then return
+    end if
     result = m.weatherTask.result
     if result = invalid then return
+    if m.interactive = true
+        appDataArrived("weather", result.available)
+        if result.available
+            m.appWeatherRaw = result
+            result = appWeatherUnits(result, m.appSettings.units)
+            m.top.FindNode("weatherLocation").text = ucase(m.appSettings.weatherLocation)
+        end if
+    end if
     if result.available
         m.temperature.text = result.temperature
         m.weatherIcon.uri = result.icon
@@ -295,13 +383,25 @@ sub onWeatherChanged()
 end sub
 
 sub onAgendaChanged()
+    if m.interactive = true
+        if not appAcceptResult("calendar") then return
+        appDataArrived("calendar", m.calendarTask.success)
+    end if
     if m.calendarTask.agenda = "" then return
     m.agendaLines = m.calendarTask.agenda.Split(chr(10))
-    m.agendaPage = 0
+    if m.interactive = true
+        pageCount = int((m.agendaLines.Count() + 5) / 6)
+        if pageCount > 0 then m.agendaPage = m.agendaPage mod pageCount
+    else
+        m.agendaPage = 0
+    end if
     showAgendaPage()
 end sub
 
 sub onTodayChanged()
+    if m.interactive = true
+        if not appAcceptResult("calendar") then return
+    end if
     if m.todayItems.Count() = 0
         m.today.text = m.calendarTask.today
         if m.calendarTask.today.Instr("unavailable") >= 0 then m.todayBody.text = "Calendar unavailable"
@@ -309,9 +409,18 @@ sub onTodayChanged()
 end sub
 
 sub onTodayItemsChanged()
+    if m.interactive = true
+        if not appAcceptResult("calendar") then return
+    end if
     m.todayItems = m.calendarTask.todayItems
-    m.todayPage = 0
+    if m.interactive = true
+        pageCount = int((m.todayItems.Count() + 2) / 3)
+        if pageCount > 0 then m.todayPage = m.todayPage mod pageCount
+    else
+        m.todayPage = 0
+    end if
     showTodayPage()
+    if m.interactive = true then appApplyLayout()
 end sub
 
 sub showTodayPage()
@@ -336,9 +445,13 @@ sub showTodayPage()
     m.todayBody.text = text
     m.todayBody.font.size = 34
     if count <= 2 then m.todayBody.font.size = 38
+    if m.interactive = true then m.todayBody.font.size = appBodySize(m.appSettings)
 end sub
 
 sub nextAgendaPage()
+    if m.interactive = true
+        if m.appSleeping or m.appManualPaused or not m.appPlaying or m.appMenu <> "" then return
+    end if
     todayPages = int((m.todayItems.Count() + 2) / 3)
     if todayPages > 1
         m.todayPage = (m.todayPage + 1) mod todayPages
@@ -349,6 +462,7 @@ sub nextAgendaPage()
         m.agendaPage = (m.agendaPage + 1) mod pages
         showAgendaPage()
     end if
+    if m.interactive = true then appApplyLayout()
 end sub
 
 sub showAgendaPage()
@@ -368,7 +482,9 @@ end sub
 sub renderForecast(result as object)
     m.weatherChart.removeChildrenIndex(m.weatherChart.getChildCount(), 0)
     m.weatherForecast.removeChildrenIndex(m.weatherForecast.getChildCount(), 0)
-    m.weatherRange.text = "Low " + result.low.ToStr() + chr(176) + "C   /   High " + result.high.ToStr() + chr(176) + "C"
+    unit = "C"
+    if m.interactive = true then unit = m.appSettings.units
+    m.weatherRange.text = "Low " + result.low.ToStr() + chr(176) + unit + "   /   High " + result.high.ToStr() + chr(176) + unit
     span = result.high - result.low
     if span < 1 then span = 1
     for i = 0 to result.forecast.Count() - 1
@@ -406,7 +522,9 @@ end sub
 function createWeatherLabel(parent as object, text as string, size as integer, width as integer, height as integer) as object
     label = parent.createChild("Label")
     label.text = text
-    label.color = m.displayColor
+    color = m.displayColor
+    if color = "" then color = "0x0C0C0CFF"
+    label.color = color
     label.width = width
     label.height = height
     font = CreateObject("roSGNode", "Font")

@@ -5,6 +5,21 @@ end sub
 sub downloadWeather()
     ' Approximate centroid of Tuscaloosa ZIP 35406, not a street address.
     url = "https://api.open-meteo.com/v1/forecast?latitude=33.3388&longitude=-87.4676"
+    if m.top.location <> "35406"
+        if m.resolvedName <> m.top.location
+            query = "https://geocoding-api.open-meteo.com/v1/search?name=" + m.top.location.Escape() + "&count=1&language=en&format=json"
+            if CreateObject("roRegex", "^[0-9]{5}$", "").IsMatch(m.top.location) then query = query + "&countryCode=US"
+            place = fetchWeatherLocation(query)
+            if place = invalid
+                m.top.result = {available:false}
+                return
+            end if
+            m.resolvedLatitude = place.latitude.ToStr().Trim()
+            m.resolvedLongitude = place.longitude.ToStr().Trim()
+            m.resolvedName = m.top.location
+        end if
+        url = "https://api.open-meteo.com/v1/forecast?latitude=" + m.resolvedLatitude + "&longitude=" + m.resolvedLongitude
+    end if
     url = url + "&current=temperature_2m,weather_code,is_day&temperature_unit=celsius&timezone=America%2FChicago"
     url = url + "&hourly=temperature_2m,weather_code,is_day&forecast_hours=25&timeformat=unixtime"
     transfer = CreateObject("roUrlTransfer")
@@ -78,6 +93,28 @@ sub downloadWeather()
         high: high
     }
 end sub
+
+function fetchWeatherLocation(url as string) as dynamic
+    transfer = CreateObject("roUrlTransfer")
+    port = CreateObject("roMessagePort")
+    transfer.SetMessagePort(port)
+    transfer.SetCertificatesFile("common:/certs/ca-bundle.crt")
+    transfer.InitClientCertificates()
+    transfer.SetUrl(url)
+    if not transfer.AsyncGetToString() then return invalid
+    response = wait(15000, port)
+    if response = invalid
+        transfer.AsyncCancel()
+        return invalid
+    end if
+    if type(response) <> "roUrlEvent" then return invalid
+    if response.GetResponseCode() <> 200 then return invalid
+    data = ParseJson(response.GetString())
+    if type(data) <> "roAssociativeArray" then return invalid
+    if type(data.results) <> "roArray" then return invalid
+    if data.results.Count() = 0 then return invalid
+    return data.results[0]
+end function
 
 function buildWeatherForecast(hourly as object, nowSeconds as integer) as object
     result = []

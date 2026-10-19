@@ -2,6 +2,9 @@
 <component name="TelegramTask" extends="Task">
     <interface>
         <field id="result" type="assocarray" alwaysNotify="true" />
+        <field id="channel" type="string" value="DNSPODT" />
+        <field id="sourceArticles" type="boolean" value="true" />
+        <field id="fontSize" type="integer" value="30" />
     </interface>
     <script type="text/brightscript" uri="pkg:/components/SharedContent.brs" />
     <script type="text/brightscript" uri="pkg:/components/TelegramContent.brs" />

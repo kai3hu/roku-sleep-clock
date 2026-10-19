@@ -114,6 +114,19 @@ sub Main()
     onePage = telegramBuildPages([{text:wide + wide}], invalid)
     check(onePage.Count() = 1 and onePage[0][0].width = 1650, "A post too long for a column can fit whole on one full-width page")
     check(telegramBuildPages([], font).Count() = 0, "Empty data produces no placeholder cards")
+    for each size in [24,30,36]
+        sized = telegramBuildPages([{id:5,text:wide + wide + wide}], invalid, size)
+        total = 0
+        for each page in sized
+            card = page[0]
+            total = total + len(card.text.Replace(chr(10),""))
+            check(card.height <= 600, "All app font sizes keep reading pages inside the body area")
+            for each line in card.lineTexts
+                check(telegramTextWidth(line,invalid,size) <= 1600, "Fallback glyph widths scale safely with app font size")
+            end for
+        end for
+        check(total = 900, "Font-size changes preserve complete article text")
+    end for
     manyParagraphs = []
     for i = 1 to 170
         manyParagraphs.Push("Paragraph")

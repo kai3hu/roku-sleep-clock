@@ -1,6 +1,18 @@
-# Sleep Clock for Roku
+# Sleep Dashboard and Sleep Clock for Roku
 
-Two minimal, sleep-friendly Roku screensavers are included.
+A remote-controlled, sleep-friendly Roku app and two separate screensavers are included. The app is **Sleep Dashboard 2.0.0**; the screensaver versions remain available independently.
+
+## Sleep Dashboard app
+
+Install `dist/sleep-dashboard-roku.zip` to use a normal Roku Home-screen app, not a system screensaver. It includes saved page switches/order, startup-page choice, Balanced / Agenda Focus / Minimal dashboard layouts, font and clock sizes, day/night schedules and text colors, automatic/manual rotation, configurable reading speed, and idle black screen with remote wake. Settings use an in-app keyboard and a live layout preview; choose **Save** to commit or **Cancel** to discard changes. The default enabled pages are Dashboard, News and Telegram; Agenda, Weather and Clock can be enabled separately.
+
+The default idle timeout is five minutes. Black screen hides the clock, content and controls and pauses all page timers; enabled feeds still update. The first remote press only wakes the app, and repeats of that held key are consumed until release. It restores the page, article position and remaining reading time. This does **not** turn off the television panel or backlight. Roku's own screensaver, standby and power settings still apply; the app does not fake keypresses, disable system protections or promise background operation after Home/Power exits it.
+
+**Controls:** Left/Right switches enabled pages; Up/Down changes items or reading pages; OK opens navigation; `*` opens settings; Play/Pause toggles automatic rotation. Back closes the current menu or returns to Dashboard; Back at Dashboard exits normally. When Dashboard is disabled, Back from a content page exits. Home and Power retain their system behavior.
+
+Settings also cover calendar range and finished tasks, weather city/postal code and Celsius/Fahrenheit, the three Kagi categories, public Telegram channel, and Source article mode. Unused data sources are not requested (Dashboard itself still needs calendar/weather). Settings and private calendar overrides are stored locally through a Task; no registry, network access or font metrics run on the render thread. Refreshes from superseded channel/account settings cannot repopulate the current display. The status screen shows sanitized per-source update state, never the calendar URL.
+
+See [the app guide](docs/app-guide.md) for all settings, limitations and installation checks. Offline, brighter sample-data previews are generated in `dist/previews/dashboard-*-readable.png`; they are simulations, not Roku screenshots.
 
 ![Clock, weekly agenda and weather preview](docs/agenda-preview.png)
 
@@ -8,7 +20,7 @@ Preview uses sample data and brighter text for readability. The actual screensav
 
 ## Build from source
 
-On Windows, run `./package-all.ps1` in PowerShell. The script generates menu artwork, creates a blank ignored `outlook-screensaver/source/config.brs` from the example if needed, and builds both ZIP packages in `dist`.
+On Windows, run `./package-all.ps1` in PowerShell. The script generates menu artwork, creates a blank ignored `outlook-screensaver/source/config.brs` from the example if needed, and builds all three ZIP packages in `dist`. `./package-dashboard.ps1` builds only the interactive app from the shared sources and the app-specific manifest/Main entry point; generated staging is kept under ignored `.tools/dashboard-stage`. The app package has no `screensaver_title` manifest field and does not run `RunScreenSaver`.
 
 To validate the BrightScript logic, install Node.js and run:
 

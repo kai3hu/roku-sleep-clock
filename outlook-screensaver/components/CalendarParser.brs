@@ -1,7 +1,7 @@
 ' Bounded seven-day iCalendar expansion, including Outlook recurrence overrides.
-function buildWeekAgenda(body as string, nowSeconds as integer) as string
-    rows = calAgendaRows(body, nowSeconds, nowSeconds + 7 * 86400)
-    if rows.Count() = 0 then return "No events in the next 7 days"
+function buildWeekAgenda(body as string, nowSeconds as integer, days = 7 as integer) as string
+    rows = calAgendaRows(body, nowSeconds, nowSeconds + days * 86400)
+    if rows.Count() = 0 then return "No events in the next " + days.ToStr() + " days"
     output = ""
     for each row in rows
         if output <> "" then output = output + chr(10)

@@ -1,8 +1,8 @@
 {
   "name": "roku-sleep-clock",
-  "version": "1.0.17",
+  "version": "2.0.0",
   "private": true,
-  "description": "Dim Roku screensavers with a today-first Outlook agenda, Kagi News, full-text Telegram posts, Celsius weather and automatic day/night brightness.",
+  "description": "Interactive dim Roku dashboard and separate screensavers with Outlook, weather, news, full-text Telegram and saved layout settings.",
   "scripts": {
     "test": "node scripts/test.cjs",
     "check": "bsc --root-dir outlook-screensaver --copy-to-staging=false --create-package=false --diagnostic-level warn",

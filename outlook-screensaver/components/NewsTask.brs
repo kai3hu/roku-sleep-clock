@@ -3,12 +3,31 @@ sub init()
 end sub
 
 sub downloadNews()
+    selectedCategories = m.top.categories
+    if type(selectedCategories) <> "roArray" then selectedCategories = []
+    if selectedCategories.Count() = 0 then selectedCategories = ["Technology","Science","Economy"]
     section = CreateObject("roRegistrySection", "KagiNews")
-    cached = newsCachedStories(ParseJson(section.Read("stories")))
+    cached = []
+    if section.Exists("stories")
+        text = section.Read("stories")
+        if text <> "" then cached = newsCachedStories(ParseJson(text))
+    end if
+    allowed = []
+    for each story in cached
+        for each category in selectedCategories
+            if story.category = category then allowed.Push(story)
+        end for
+    end for
+    cached = allowed
     if cached.Count() > 0 then m.top.result = {stories:cached, delayed:true}
     feeds = []
     delayed = false
     for each category in newsCategories()
+        enabled = false
+        for each name in selectedCategories
+            if name = category.name then enabled = true
+        end for
+        if not enabled then continue for
         items = newsParseFeed(fetchNewsFeed(category.file), category.name)
         if items.Count() = 0
             delayed = true

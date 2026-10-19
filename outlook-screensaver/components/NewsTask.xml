@@ -2,6 +2,7 @@
 <component name="NewsTask" extends="Task">
     <interface>
         <field id="result" type="assocarray" alwaysNotify="true" />
+        <field id="categories" type="array" />
     </interface>
     <script type="text/brightscript" uri="pkg:/components/SharedContent.brs" />
     <script type="text/brightscript" uri="pkg:/components/NewsContent.brs" />

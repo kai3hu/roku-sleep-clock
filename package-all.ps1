@@ -33,3 +33,4 @@ Compress-Archive -Path @(
 
 Write-Host "Created $clockOutput"
 Write-Host "Created $scheduleOutput"
+& (Join-Path $projectRoot 'package-dashboard.ps1')

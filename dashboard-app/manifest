@@ -1,0 +1,9 @@
+title=Sleep Dashboard
+subtitle=Dim clock, agenda, weather and reading
+major_version=2
+minor_version=0
+build_version=0
+ui_resolutions=fhd
+splash_color=#000000
+mm_icon_focus_hd=pkg:/images/menu-hd.png
+mm_icon_focus_fhd=pkg:/images/menu-fhd.png
