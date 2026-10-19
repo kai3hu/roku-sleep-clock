@@ -25,7 +25,7 @@ function Draw-DashboardContent($Graphics,[string]$Layout,[string]$Color) {
     $state=$Graphics.Save()
     $Graphics.TranslateTransform($weatherX,$weatherY)
     $Graphics.ScaleTransform($weatherScale,$weatherScale)
-    Draw-DashboardText $Graphics 'TUSCALOOSA 35406' 28 0 0 $Color
+    Draw-DashboardText $Graphics 'TUSCALOOSA' 28 0 0 $Color
     Draw-DashboardText $Graphics '20°C' 60 125 45 $Color
     Draw-DashboardText $Graphics 'Clear' 28 0 160 $Color
     if($Layout -ne 'Minimal') {

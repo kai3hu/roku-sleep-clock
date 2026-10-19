@@ -1,4 +1,4 @@
-# Sleep Dashboard 2.0
+# Sleep Dashboard 2.0.1
 
 ## Install and launch
 
@@ -60,9 +60,11 @@ Enable/disable autoplay, choose manual-browse auto-resume (Never / 60 / 180 / 30
 
 ### Content and privacy
 
-Calendar range: 1/3/7 upcoming days; today's finished tasks can be hidden. Add an HTTPS ICS URL with the masked keyboard, or keep the link bundled in your personal installer. URLs never appear in the settings list or status panel. **Forget Outlook** disables calendar requests, deletes the saved override and clears displayed tasks when you save. It also opts out of the bundled link; it cannot erase a URL compiled into an already-installed package. To remove that bundled secret from the package itself, build a new installer with a blank configuration. A native registry is local storage, not an encrypted password vault.
+Calendar range: 1/3/7 upcoming days; today's finished tasks can be hidden. Changing these display filters retains the current tasks until refreshed data arrives; even an identical agenda response is published to the UI again. Only an account change or disconnection clears private rows immediately. Add an HTTPS ICS URL with the masked keyboard, or keep the link bundled in your personal installer. URLs never appear in the settings list or status panel. **Forget Outlook** disables calendar requests, deletes the saved override and clears displayed tasks when you save. It also opts out of the bundled link; it cannot erase a URL compiled into an already-installed package. To remove that bundled secret from the package itself, build a new installer with a blank configuration. A native registry is local storage, not an encrypted password vault.
 
 Weather accepts a city or postal code (five-digit ZIPs are searched in the US); include country/state qualifiers for ambiguous city names, for example `Paris, France`. The provider's first match is used. An unresolved location shows an unavailable/delayed state rather than silently using a different location. Default ZIP 35406 retains the existing approximate coordinates. Fahrenheit is a display conversion from the cached Celsius forecast; it does not contaminate future Celsius readings.
+
+The dashboard and dedicated weather page display only the city name, not the configured postal code. Default 35406 displays TUSCALOOSA immediately; other postal codes use the provider's city name after lookup. Before an unknown postal code is resolved, the heading is simply WEATHER. Unit changes and failed refreshes keep the current city's metadata.
 
 Toggle the three Kagi categories independently; all off means no news requests. Enter a public Telegram channel name, `@name` or `https://t.me/name`. Private/login-only channels are not supported. With Source mode enabled, readable Telegraph articles replace Source-ending captions; unsupported or unavailable sources are skipped. Turning the mode off shows the post's own caption/body instead. Reply previews remain excluded.
 

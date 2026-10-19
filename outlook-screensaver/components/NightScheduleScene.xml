@@ -35,7 +35,7 @@
                 <Font role="font" uri="font:SystemFontFile" size="24" />
             </Label>
             <Group id="weather" translation="[1000,10]">
-                <Label id="weatherLocation" width="650" height="45" text="TUSCALOOSA 35406" color="0x0C0C0CFF">
+                <Label id="weatherLocation" width="650" height="45" text="TUSCALOOSA" color="0x0C0C0CFF">
                     <Font role="font" uri="font:SystemFontFile" size="28" />
                 </Label>
                 <Poster id="weatherIcon" blendColor="0x555555FF" translation="[0,55]" width="96" height="96" loadDisplayMode="scaleToFit" visible="false" />

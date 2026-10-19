@@ -5,6 +5,7 @@ end sub
 sub downloadWeather()
     ' Approximate centroid of Tuscaloosa ZIP 35406, not a street address.
     url = "https://api.open-meteo.com/v1/forecast?latitude=33.3388&longitude=-87.4676"
+    city = "Tuscaloosa"
     if m.top.location <> "35406"
         if m.resolvedName <> m.top.location
             query = "https://geocoding-api.open-meteo.com/v1/search?name=" + m.top.location.Escape() + "&count=1&language=en&format=json"
@@ -17,8 +18,10 @@ sub downloadWeather()
             m.resolvedLatitude = place.latitude.ToStr().Trim()
             m.resolvedLongitude = place.longitude.ToStr().Trim()
             m.resolvedName = m.top.location
+            m.resolvedCity = place.name
         end if
         url = "https://api.open-meteo.com/v1/forecast?latitude=" + m.resolvedLatitude + "&longitude=" + m.resolvedLongitude
+        city = m.resolvedCity
     end if
     url = url + "&current=temperature_2m,weather_code,is_day&temperature_unit=celsius&timezone=America%2FChicago"
     url = url + "&hourly=temperature_2m,weather_code,is_day&forecast_hours=25&timeformat=unixtime"
@@ -85,6 +88,7 @@ sub downloadWeather()
     temperature = int(current.temperature_2m + 0.5)
     m.top.result = {
         available: true
+        city: city
         temperature: temperature.ToStr() + chr(176) + "C"
         description: condition.description
         icon: "pkg:/images/weather/" + condition.icon + ".png"
@@ -113,7 +117,11 @@ function fetchWeatherLocation(url as string) as dynamic
     if type(data) <> "roAssociativeArray" then return invalid
     if type(data.results) <> "roArray" then return invalid
     if data.results.Count() = 0 then return invalid
-    return data.results[0]
+    place = data.results[0]
+    if type(place) <> "roAssociativeArray" then return invalid
+    if type(place.name) <> "String" and type(place.name) <> "roString" then return invalid
+    if place.latitude = invalid or place.longitude = invalid then return invalid
+    return place
 end function
 
 function buildWeatherForecast(hourly as object, nowSeconds as integer) as object

@@ -1,8 +1,10 @@
 # Sleep Dashboard and Sleep Clock for Roku
 
-A remote-controlled, sleep-friendly Roku app and two separate screensavers are included. The app is **Sleep Dashboard 2.0.0**; the screensaver versions remain available independently.
+A remote-controlled, sleep-friendly Roku app and two separate screensavers are included. The app is **Sleep Dashboard 2.0.1**; the screensaver versions remain available independently.
 
 ## Sleep Dashboard app
+
+Version 2.0.1 fixes agenda data disappearing after a range/filter change: existing rows remain visible during refresh and identical responses still repaint the scene. Weather headings show the resolved city name (Tuscaloosa for default ZIP 35406), never the lookup ZIP; city metadata is retained across unit changes.
 
 Install `dist/sleep-dashboard-roku.zip` to use a normal Roku Home-screen app, not a system screensaver. It includes saved page switches/order, startup-page choice, Balanced / Agenda Focus / Minimal dashboard layouts, font and clock sizes, day/night schedules and text colors, automatic/manual rotation, configurable reading speed, and idle black screen with remote wake. Settings use an in-app keyboard and a live layout preview; choose **Save** to commit or **Cancel** to discard changes. The default enabled pages are Dashboard, News and Telegram; Agenda, Weather and Clock can be enabled separately.
 

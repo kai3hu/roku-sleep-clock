@@ -87,7 +87,7 @@ function Save-ScreenPreview {
             Write-PreviewText $graphics 'Wed 10/21   18:00   Dinner' 24 132 770 $Color
             Write-PreviewText $graphics 'Thu 10/22   10:00   Planning' 24 132 810 $Color
             Write-PreviewText $graphics 'Fri 10/23   14:00   Weekly review' 24 132 850 $Color
-            Write-PreviewText $graphics 'TUSCALOOSA 35406' 28 1120 90 $Color
+            Write-PreviewText $graphics 'TUSCALOOSA' 28 1120 90 $Color
             $weatherState=$graphics.Save()
             $graphics.TranslateTransform(1120,145)
             $graphics.ScaleTransform(0.75,0.75)

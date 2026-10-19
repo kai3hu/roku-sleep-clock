@@ -28,3 +28,6 @@ assert(/^title=Sleep Dashboard$/m.test(manifest), 'App must have a normal Roku H
 assert(!/^screensaver_title=/m.test(manifest), 'Interactive app must not advertise a screensaver entry point');
 const entry = fs.readFileSync(path.join(root, '..', 'dashboard-app', 'source', 'main.brs'), 'utf8');
 assert(/sub Main\(/i.test(entry) && !/RunScreenSaver/i.test(entry), 'Interactive package uses Main, not RunScreenSaver');
+const calendar = fs.readFileSync(path.join(directory, 'CalendarTask.xml'), 'utf8');
+assert(/<field\b(?=[^>]*\bid="agenda")(?=[^>]*\balwaysNotify="true")[^>]*\/>/i.test(calendar),
+  'Repeated calendar text must still notify the scene after a range/filter change');

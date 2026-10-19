@@ -162,7 +162,78 @@ sub Main()
     m.appMenuIndex = 6
     appMenuKey("OK")
     check(m.appSettings.enabled.clock and m.appMenuNote.Instr("at least one") > 0, "Page settings UI refuses to switch off the last enabled page")
+    testCalendarRangeAndCity()
     print "APP_TEST_FAILURES="; m.failures
+end sub
+
+sub testCalendarRangeAndCity()
+    initMockApp()
+    m.calendarTask.uri = "https://example.com/calendar.ics"
+    m.calendarTask.success = true
+    m.calendarTask.agenda = "Mon 09:00 Existing task"
+    m.calendarTask.todayItems = [{timeLabel:"09:00",title:"Today's task"}]
+    m.calendarTask.today = "TODAY / 1 event"
+    appRequestStarted("calendar")
+    onTodayItemsChanged()
+    onAgendaChanged()
+    oldText = m.agenda.text
+    oldToday = m.todayBody.text
+    appOpenMenu("Settings")
+    m.appSettings.calendarDays = 3
+    appCloseMenu(true)
+    check(m.appPendingRefresh.calendar, "Changing the calendar range queues a refresh")
+    check(m.agenda.text = oldText and m.agendaLines.Count() = 1, "Range-only changes keep the current agenda visible while refreshing")
+    check(m.todayBody.text = oldToday and m.todayItems.Count() = 1, "Range-only changes do not erase today's independent task list")
+    check(m.calendarTask.uri = "https://example.com/calendar.ics", "Display filters do not disconnect an unchanged calendar account")
+    onAgendaChanged()
+    check(m.agenda.text = oldText and m.appPendingRefresh.calendar, "An old in-flight range response is ignored without clearing the visible agenda")
+    appRequestStarted("calendar")
+    onTodayItemsChanged()
+    onAgendaChanged()
+    check(m.agenda.text = oldText and m.heading.text = "NEXT 3 DAYS", "An unchanged calendar response repaints the chosen range correctly")
+    appOpenMenu("Settings")
+    m.appSettings.calendarDays = 7
+    appCloseMenu(true)
+    check(m.agenda.text = oldText, "Expanding the range also retains the last good agenda")
+    appOpenMenu("Settings")
+    m.appSettings.calendarAllowed = false
+    appCloseMenu(true)
+    check(m.agenda.text = "" and m.todayItems.Count() = 0, "Disconnect still clears private calendar content immediately")
+    appOpenMenu("Settings")
+    m.appSettings.calendarAllowed = true
+    appCloseMenu(true)
+    appRequestStarted("calendar")
+    onTodayItemsChanged()
+    onAgendaChanged()
+    check(m.agenda.text = oldText and m.todayItems.Count() = 1, "Reconnecting the same account can restore an identical response")
+
+    initMockApp()
+    m.temperature = mockNode()
+    m.weatherIcon = mockNode()
+    m.weatherDescription = mockNode()
+    m.weatherChart = mockNode()
+    m.weatherForecast = mockNode()
+    m.weatherRange = m.top.nodes.weatherRange
+    m.hasWeather = false
+    raw = {available:true,city:"Tuscaloosa",temperature:"20C",description:"Clear",icon:"sun",low:10,high:30,forecast:[]}
+    check(appWeatherCity("35406") = "Tuscaloosa", "Default city is visible before the weather request completes")
+    check(appWeatherCity("98101") = "Weather", "Unknown postal codes are never used as city headings")
+    check(appWeatherCity("98101",{city:"Seattle"}) = "Seattle", "Other postal codes display their resolved city")
+    check(appWeatherCity("Tuscaloosa 35406") = "Tuscaloosa", "Postal codes are stripped from fallback headings")
+    check(appWeatherUnits(raw,"F").city = "Tuscaloosa", "Unit conversion preserves city metadata")
+    m.weatherTask = {result:raw}
+    appRequestStarted("weather")
+    onWeatherChanged()
+    check(m.top.nodes.weatherLocation.text = "TUSCALOOSA", "Dashboard displays the resolved city, not the configured ZIP code")
+    m.appSettings.units = "F"
+    m.appCommitted.units = "F"
+    onWeatherChanged()
+    check(m.top.nodes.weatherLocation.text = "TUSCALOOSA", "City label survives Fahrenheit conversion")
+    m.appWeatherRaw = invalid
+    m.appCommitted.weatherLocation = "Seattle, Washington"
+    m.appSettings.weatherLocation = "Seattle, Washington"
+    appApplyLayout()
+    check(m.top.nodes.weatherLocation.text = "SEATTLE", "A changed location cannot retain the previous city's label while loading")
 end sub
 
 sub initMockApp()
@@ -218,7 +289,7 @@ sub initMockApp()
     m.telegramGrid = mockNode()
     m.calendarTask = {state:"stop",uri:""}
     nodes = {}
-    for each id in ["weatherChart","weatherForecast","weatherRange","weatherForecastHeading","newsTitle","newsSummary","newsUrl","newsHeading","newsAttribution","telegramHeading","telegramStatus","telegramAttribution"]
+    for each id in ["weatherLocation","weatherChart","weatherForecast","weatherRange","weatherForecastHeading","newsTitle","newsSummary","newsUrl","newsHeading","newsAttribution","telegramHeading","telegramStatus","telegramAttribution"]
         nodes[id] = mockNode()
     end for
     m.top = {nodes:nodes,FindNode:mockFindNode,setFocus:mockFocus}

@@ -363,7 +363,7 @@ sub onWeatherChanged()
         if result.available
             m.appWeatherRaw = result
             result = appWeatherUnits(result, m.appSettings.units)
-            m.top.FindNode("weatherLocation").text = ucase(m.appSettings.weatherLocation)
+            m.top.FindNode("weatherLocation").text = ucase(appWeatherCity(m.appCommitted.weatherLocation, m.appWeatherRaw))
         end if
     end if
     if result.available

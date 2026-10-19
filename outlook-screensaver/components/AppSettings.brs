@@ -55,6 +55,7 @@ end function
 function appWeatherUnits(raw as object, unit as string) as object
     if unit = "C" then return raw
     result = {available:raw.available,description:raw.description,icon:raw.icon,forecast:[],low:int(raw.low * 1.8 + 32.5),high:int(raw.high * 1.8 + 32.5)}
+    if isText(raw.city) then result.city = raw.city
     celsius = val(raw.temperature)
     result.temperature = int(celsius * 1.8 + 32.5).ToStr() + chr(176) + "F"
     for each point in raw.forecast
@@ -62,6 +63,25 @@ function appWeatherUnits(raw as object, unit as string) as object
         result.forecast.Push({timestamp:point.timestamp,hour:point.hour,value:value,temperature:value.ToStr() + chr(176) + "F",icon:point.icon})
     end for
     return result
+end function
+
+' Display geography, never the postal code used to look it up.
+function appWeatherCity(location as string, raw = invalid as dynamic) as string
+    if type(raw) = "roAssociativeArray"
+        if isText(raw.city)
+            city = appStripPostalCode(raw.city)
+            if city <> "" then return city
+        end if
+    end if
+    if location.Trim() = "35406" then return "Tuscaloosa"
+    city = appStripPostalCode(location.Split(",")[0])
+    if city <> "" then return city
+    return "Weather"
+end function
+
+function appStripPostalCode(text as string) as string
+    text = CreateObject("roRegex", "\b[0-9]{5}(-[0-9]{4})?\b", "").ReplaceAll(text, " ")
+    return CreateObject("roRegex", "[ ]+", "").ReplaceAll(text, " ").Trim()
 end function
 
 function appSettingRows(group as string) as object

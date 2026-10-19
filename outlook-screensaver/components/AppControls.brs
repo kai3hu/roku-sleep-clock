@@ -69,10 +69,14 @@ function appCanFetch(source as string) as boolean
 end function
 
 function appSourceKey(source as string, settings as object) as string
-    if source = "calendar" then return settings.calendarUrl + settings.useBundledCalendar.ToStr() + settings.calendarAllowed.ToStr() + settings.calendarDays.ToStr() + settings.showEnded.ToStr()
+    if source = "calendar" then return appCalendarAccountKey(settings) + "|" + settings.calendarDays.ToStr() + "|" + settings.showEnded.ToStr()
     if source = "weather" then return settings.weatherLocation
     if source = "news" then return settings.technology.ToStr() + settings.science.ToStr() + settings.economy.ToStr()
     return settings.telegramChannel + settings.sourceArticles.ToStr() + settings.fontSize
+end function
+
+function appCalendarAccountKey(settings as object) as string
+    return settings.calendarUrl + "|" + settings.useBundledCalendar.ToStr() + "|" + settings.calendarAllowed.ToStr()
 end function
 
 sub appRequestStarted(source as string)
@@ -379,6 +383,7 @@ end sub
 
 sub appApplyLayout()
     settings = m.appSettings
+    m.top.FindNode("weatherLocation").text = ucase(appWeatherCity(m.appCommitted.weatherLocation, m.appWeatherRaw))
     if m.appCurrent = "dashboard" or m.appCurrent = "agenda" then showTodayPage()
     scale = settings.margin / 100.0
     m.content.scale = [scale,scale]
@@ -711,12 +716,18 @@ sub appSettingsApplied(oldSettings as object)
         changed = appSourceKey(source, oldSettings) <> appSourceKey(source, m.appSettings)
         if changed
             if source = "calendar"
-                m.todayItems = []
-                m.agendaLines = []
-                m.todayBody.text = ""
-                m.agenda.text = ""
-                m.calendarTask.uri = ""
-                if not m.appSettings.calendarAllowed then m.today.text = "TODAY / Outlook disabled"
+                ' Range/finished-task filters are not an account disconnection.
+                ' Keep the last visible data until the new response is published.
+                if appCalendarAccountKey(oldSettings) <> appCalendarAccountKey(m.appSettings)
+                    m.todayItems = []
+                    m.agendaLines = []
+                    m.todayPage = 0
+                    m.agendaPage = 0
+                    m.todayBody.text = ""
+                    m.agenda.text = ""
+                    m.calendarTask.uri = ""
+                    if not m.appSettings.calendarAllowed then m.today.text = "TODAY / Outlook disabled"
+                end if
             else if source = "telegram"
                 m.telegramPages = []
                 m.telegramAvailablePages = []
