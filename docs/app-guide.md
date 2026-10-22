@@ -1,4 +1,4 @@
-# Sleep Dashboard 2.0.2 (experimental)
+# Sleep Dashboard 2.1.0
 
 ## Install and launch
 
@@ -34,7 +34,19 @@ With Dashboard disabled, Back from a content page exits. In black-screen/clock-s
 
 ## Settings
 
-All changes are previews until **Save and return** (or **Save settings**). Back at the top settings screen and Cancel discard the preview. Text entry has its own SAVE key, which updates the draft; still save the settings afterward to persist it. The custom keyboard keeps the same dark styling and routes all activity through the idle timer. Idle timeout cancels any unsaved settings/text entry before blacking the screen.
+Settings have a category rail, option list and live preview. Up/Down selects a category; OK opens it. Inside a category, Left/Right changes values directly; OK opens a complete choice list for longer sets or toggles a two-choice option. In a choice list, Up/Down previews; OK keeps the choice in the draft; Back restores the previous value. Back from a category returns to the category rail.
+
+All changes remain previews until **Save & close** or **Play/Pause** from a settings page. Up above the first item or Down below the last reaches the persistent Save / Discard buttons. Back or Star at the top prompts to save, keep editing or discard when there are unsaved changes. Text entry has its own SAVE key, which updates the draft; still save settings afterward. Idle timeout still cancels unsaved settings/text entry before sleeping. Network/account changes apply only to saved settings.
+
+### Clock
+
+Choose System (original), Roboto Mono Light, Rajdhani Light, DSEG7 Classic Light or Lora Regular. The font picker displays the same time in every font, with a larger live preview on the right. All fonts are bundled static TTFs; no font download or font measurement occurs on the render thread. The serif is an internally renamed static derivative of Lora. See [font sources and licenses](../outlook-screensaver/fonts/README.md).
+
+Minute transition: Off, Fade (default), or Slide. Transitions last 0.24 seconds; Slide moves only eight pixels. The colon does not blink and the animation does not raise text brightness. Choose clock size 90/110/140, 12/24-hour format and date visibility. AM/PM is a separate label so the digital font needs only digits and a colon. Reader pages cap clocks at 110px to preserve article space.
+
+Idle screen: Black screen (default) or Clock only. Clock only hides all other content and relocates to one of nine safe positions every ten minutes from entering standby, even across background refreshes. Movement does not reset the user-idle timer or alter the selected page/article; wake restores the normal layout. Black screen remains entirely black. Position changes mitigate static-image exposure, not a guarantee against image retention.
+
+![Font choice simulation](font-picker-preview.png)
 
 ### Pages
 
@@ -46,13 +58,13 @@ Dashboard depends on both calendar and weather. A separate disabled Weather page
 
 Balanced is the original day planner/weather split. Agenda Focus widens the agenda and reduces the weather area. Minimal shows the clock, one today's task and current weather; the full list is still available on Agenda. The dedicated Agenda page uses the full text width. News and Telegram keep full-width reading layouts regardless of Dashboard preset.
 
-Choose small/medium/large text; clock size 90/110/140; 12/24-hour time; date visibility; and 90/95/100% content scale for safe margins. Reader pages cap the clock at 110px to preserve article space; Minimal uses its own large clock. Restore layout defaults changes only visual options, never account settings. Telegram font changes regenerate measured reading pages in its worker before showing the new layout.
+Choose small/medium/large content text and 90/95/100% content scale for safe margins. Clock options have moved to the Clock category; existing saved values are retained. Minimal also honors the chosen clock size. Restore visual defaults changes only visual options, never account settings. Telegram content-font changes regenerate measured reading pages in its worker before showing the new layout.
 
 ### Display
 
-Idle choices: Never, 60, 180, 300, 600, 1800 or 3600 seconds. Optional clock standby replaces black screen with just the clock. Automatic page changes and network refreshes are **not** remote activity and never reset this timer. Both article and agenda pagination stop while sleeping.
+Idle choices: Never, 1/3/5/10/30 minutes or 1 hour. Choose the idle appearance under Clock > Idle screen. Automatic page changes and network refreshes are **not** remote activity and never reset this timer. Both article and agenda pagination stop while sleeping.
 
-**Keep running (Experimental; 10 s every hour)** is Off by default, including when loading old settings. Enable it and **Save and return** to opt in. It attempts one ten-second, local, silent black video every 3600 seconds, independently of page rotation and app black screen. It never loops continuously, resets the user-idle clock, changes pages, raises brightness or sends simulated remote keys. A real remote press stops the pulse before normal wake/navigation handling. Saving Off cancels it immediately. A failure waits until the next hourly attempt. This is unverified on the target firmware; see [the experiment checklist](hourly-experiment.md). Do not assume a successful playback prevents idle exit.
+**Keep running** remains experimental and Off for new installations; an existing saved On value is retained. Enable it and **Save & close** to opt in. It attempts one ten-second, local, silent black video every 3600 seconds, independently of page rotation and app black screen. It never loops continuously, resets the user-idle clock, changes pages, raises brightness or sends simulated remote keys. A real remote press stops the pulse before normal wake/navigation handling. Saving Off cancels it immediately. A failure waits until the next hourly attempt. Initial testing on the owner's TV exceeded three hours without an idle exit; this is not a universal guarantee. See [the experiment notes](hourly-experiment.md).
 
 Night start/end are local hours. Day and night each have Extra dim, Low and Medium brightness. Gray and Warm gray text tones leave the background opaque black. Optional temporary reading boost raises text brightness only during manual browsing. These controls cannot adjust the television's hardware backlight or guarantee prevention of image retention.
 
@@ -74,10 +86,15 @@ Toggle the three Kagi categories independently; all off means no news requests. 
 
 Shows update state for Outlook, weather, news and Telegram. Refresh all or one enabled data source manually. Disabled sources are not forced on by Refresh. Settings saves run on a Task, coalesce pending changes, and retry failed storage writes. Layout previews and keyboard drafts are never written as committed settings.
 
-The status footer also shows hourly pulse state and the previous exit reason if Roku supplied it. **Test keep-running pulse now** requires the saved experiment switch to be On. A manual test reschedules the next automatic pulse for one hour later; it does not enable the switch or save any draft settings. Playback completion is deliberately labeled **effect unverified**, not proof of a fix.
+The status panel also shows hourly pulse state and the previous exit reason if Roku supplied it. **Test hourly playback now** needs a saved On switch. If it is Off or changes are unsaved, confirmation offers **Enable, save and test** or **Save changes and test**; only explicit confirmation commits the draft and enables playback. Keep editing / Back starts nothing. A manual test reschedules the next automatic pulse for one hour later. Playback completion alone is not proof of idle-exit prevention.
 
 ## Verification and device limitations
 
 `npm test` checks settings validation, page ordering and last-page protection, data dependencies, night hours, wake-key consumption, cancellation/save semantics, source-generation checks, Telegram-only refresh rotation, Celsius/Fahrenheit conversion and existing screensaver/calendar/news/Telegram behavior. Static guards reject render-thread registry/network/font-metric calls. The app build separately compiles its generated scene and verifies a normal Home-screen manifest/Main entry point.
 
 Desktop tests and offline layout simulations do not replace a Roku device test. After installing, verify remote focus, storage across app relaunch, the chosen idle boundary, a long article across multiple pages, and wake after both app black screen and any Roku system screensaver. Check TV sleep/power-saving settings separately. This app does not keep the hardware awake with simulated keys, run after Home exits it, or guarantee automatic app launch after power-on. The hourly media experiment suppresses the system screensaver only during its short playback; there is no guarantee it resets the separate idle-exit policy.
+
+To regenerate the settings simulations, run `node scripts/settings-preview.cjs`
+for the actual mock node tree or `python scripts/render-settings-preview.py`
+with Pillow installed. The images use synthetic tasks, the bundled clock fonts
+and a Segoe UI approximation for Roku's system font; they are not TV captures.

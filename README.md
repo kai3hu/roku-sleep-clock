@@ -1,14 +1,16 @@
 # Sleep Dashboard and Sleep Clock for Roku
 
-A remote-controlled, sleep-friendly Roku app and two separate screensavers are included. The latest source is **Sleep Dashboard 2.0.2 (experimental)**; the screensaver versions remain available independently.
+A remote-controlled, sleep-friendly Roku app and two separate screensavers are included. The latest app is **Sleep Dashboard 2.1.0**; the screensaver versions remain available independently.
 
 ## Sleep Dashboard app
 
-Version 2.0.2 adds an opt-in hourly keep-running experiment: one local, silent black video plays for up to ten seconds every 60 minutes, never continuously. This does **not** yet prove prevention of Roku's two-hour `EXIT_IDLE_AUTO_EXIT`. Build `./package-dashboard.ps1 -Experimental` for `dist/sleep-dashboard-experimental-roku.zip`; this leaves the existing stable ZIP untouched. See [the experiment and device-test checklist](docs/hourly-experiment.md) before enabling it.
+Version 2.1.0 adds four bundled clock fonts alongside the original System font, subtle minute transitions (Off / Fade / Slide), and ten-minute position changes during clock-only idle. Settings now have category navigation, real font samples, live previews, persistent Save / Discard buttons, a Play/Pause save shortcut and an unsaved-exit prompt. Build `./package-dashboard.ps1` for `dist/sleep-dashboard-roku.zip`.
+
+The opt-in hourly keep-running experiment from 2.0.2 is unchanged: local, silent black playback for up to ten seconds every 60 minutes, never continuously. Initial testing on the owner's TV exceeded three hours without an idle exit; this does not establish a universal fix. The saved switch is preserved and remains Off for new installations. See [the experiment notes](docs/hourly-experiment.md).
 
 Version 2.0.1 fixed agenda data disappearing after a range/filter change: existing rows remain visible during refresh and identical responses still repaint the scene. Weather headings show the resolved city name (Tuscaloosa for default ZIP 35406), never the lookup ZIP; city metadata is retained across unit changes.
 
-Install `dist/sleep-dashboard-roku.zip` to use a normal Roku Home-screen app, not a system screensaver. It includes saved page switches/order, startup-page choice, Balanced / Agenda Focus / Minimal dashboard layouts, font and clock sizes, day/night schedules and text colors, automatic/manual rotation, configurable reading speed, and idle black screen with remote wake. Settings use an in-app keyboard and a live layout preview; choose **Save** to commit or **Cancel** to discard changes. The default enabled pages are Dashboard, News and Telegram; Agenda, Weather and Clock can be enabled separately.
+Install `dist/sleep-dashboard-roku.zip` to use a normal Roku Home-screen app, not a system screensaver. It includes saved page switches/order, startup-page choice, Balanced / Agenda Focus / Minimal dashboard layouts, font and clock sizes, day/night schedules and text colors, automatic/manual rotation, configurable reading speed, and idle black screen with remote wake. Choose **Save & close** (or Play/Pause in settings) to commit; **Discard changes** restores saved values. The default enabled pages are Dashboard, News and Telegram; Agenda, Weather and Clock can be enabled separately.
 
 The default idle timeout is five minutes. Black screen hides the clock, content and controls and pauses all page timers; enabled feeds still update. The first remote press only wakes the app, and repeats of that held key are consumed until release. It restores the page, article position and remaining reading time. This does **not** turn off the television panel or backlight. Roku's own idle-exit, standby and power settings still apply; the app does not fake keypresses or promise background operation after Home/Power exits it. The disabled-by-default media experiment temporarily suppresses the system screensaver during each short playback; it is not a supported keep-awake API or a promise of store certification.
 
@@ -17,6 +19,8 @@ The default idle timeout is five minutes. Black screen hides the clock, content 
 Settings also cover calendar range and finished tasks, weather city/postal code and Celsius/Fahrenheit, the three Kagi categories, public Telegram channel, and Source article mode. Unused data sources are not requested (Dashboard itself still needs calendar/weather). Settings and private calendar overrides are stored locally through a Task; no registry, network access or font metrics run on the render thread. Refreshes from superseded channel/account settings cannot repopulate the current display. The status screen shows sanitized per-source update state, never the calendar URL.
 
 See [the app guide](docs/app-guide.md) for all settings, limitations and installation checks. Offline, brighter sample-data previews are generated in `dist/previews/dashboard-*-readable.png`; they are simulations, not Roku screenshots.
+
+![Settings layout simulation](docs/settings-preview.png)
 
 ![Clock, weekly agenda and weather preview](docs/agenda-preview.png)
 

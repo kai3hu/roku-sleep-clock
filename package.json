@@ -1,6 +1,6 @@
 {
   "name": "roku-sleep-clock",
-  "version": "2.0.2",
+  "version": "2.1.0",
   "private": true,
   "description": "Interactive dim Roku dashboard and separate screensavers with Outlook, weather, news, full-text Telegram and saved layout settings.",
   "scripts": {

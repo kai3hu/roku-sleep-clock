@@ -11,11 +11,15 @@ const suites = [
       'outlook-screensaver/components/SharedContent.brs',
       'outlook-screensaver/components/TelegramContent.brs',
       'outlook-screensaver/components/AppSettings.brs',
+      'outlook-screensaver/components/AppClock.brs',
+      'outlook-screensaver/components/AppMenu.brs',
       'outlook-screensaver/components/AppKeepRunning.brs',
       'outlook-screensaver/components/AppControls.brs',
       'outlook-screensaver/components/NightScheduleScene.brs',
       'tests/app-tests.brs',
-      'tests/keep-running-tests.brs'
+      'tests/keep-running-tests.brs',
+      'tests/clock-settings-tests.brs',
+      'tests/settings-preview.brs'
     ],
     success: /APP_TEST_FAILURES=\s*0/
   },

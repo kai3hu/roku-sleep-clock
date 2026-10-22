@@ -1,5 +1,12 @@
 # Hourly keep-running experiment (2.0.2)
 
+Update for 2.1.0: playback timing and bounds are unchanged. The owner reported
+more than three hours without an exit; console checks confirmed repeated
+completed pulses. This is an initial result on one TV, not universal proof.
+No additional long-running monitoring was requested. The new settings UI uses
+**Keep running**, **Save & close**, and a save/enable confirmation before a
+manual test when necessary; see [the current app guide](app-guide.md).
+
 ## Evidence and limits
 
 The target TCL 55R635 on Roku OS 15.3.4 build 2303 reported

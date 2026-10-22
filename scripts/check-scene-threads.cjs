@@ -43,3 +43,15 @@ assert(!/UpdateLastKeypressTime|:8060|keypress\//i.test(pulse + entry), 'No simu
 assert(!/<Video\b/i.test(fs.readFileSync(path.join(directory, 'NightScheduleScene.xml'), 'utf8')),
   'Standalone screensaver must not instantiate a media player');
 console.log('PASS: Hourly media pulse stays local, bounded, opt-in and separate from user activity.');
+
+for (const file of ['RobotoMono-Light.ttf', 'Rajdhani-Light.ttf', 'DSEG7Classic-Light.ttf', 'SleepClockSerif-Regular.ttf']) {
+  const data = fs.readFileSync(path.join(root, 'fonts', file));
+  assert.equal(data.readUInt32BE(0), 0x00010000, `${file}: expected TrueType`);
+  const tables = new Set(Array.from({ length: data.readUInt16BE(4) }, (_, i) => data.toString('ascii', 12 + i * 16, 16 + i * 16)));
+  for (const tag of ['cmap', 'glyf', 'hmtx', 'name']) assert(tables.has(tag), `${file}: missing ${tag}`);
+  assert(!tables.has('fvar'), `${file}: Roku needs a static face, not a variable font`);
+}
+for (const file of ['RobotoMono-OFL.txt', 'Rajdhani-OFL.txt', 'DSEG-LICENSE.txt', 'Lora-OFL.txt']) {
+  assert(fs.readFileSync(path.join(root, 'fonts', file), 'utf8').includes('SIL OPEN FONT LICENSE'), `Missing font license: ${file}`);
+}
+console.log('PASS: Bundled clock fonts are static TrueType files with distribution licenses.');

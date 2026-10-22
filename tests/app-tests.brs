@@ -1,4 +1,8 @@
-sub Main()
+sub Main(preview = false as boolean)
+    if preview
+        settingsPreview()
+        return
+    end if
     m.failures = 0
     settings = appDefaults()
     check(appEnabledPages(settings).Join(",") = "dashboard,news,telegram", "App defaults enable useful pages without duplicate agenda/weather views")
@@ -164,6 +168,7 @@ sub Main()
     check(m.appSettings.enabled.clock and m.appMenuNote.Instr("at least one") > 0, "Page settings UI refuses to switch off the last enabled page")
     testCalendarRangeAndCity()
     testKeepRunning()
+    testClockAndSettings()
     print "APP_TEST_FAILURES="; m.failures
 end sub
 
@@ -246,6 +251,12 @@ sub initMockApp()
     m.appPlaying = true
     m.appManualPaused = false
     m.appMenu = ""
+    m.appMenuZone = "rows"
+    m.appFooterIndex = 0
+    m.appCategoryIndex = 0
+    m.appPicker = invalid
+    m.appConfirm = invalid
+    m.appKeyboard = invalid
     m.appCurrent = "dashboard"
     m.appStatus = {calendar:"Ready",weather:"Ready",news:"Ready",telegram:"Ready"}
     m.appIdleClock = mockClock(0)
@@ -283,6 +294,21 @@ sub initMockApp()
     m.agendaLines = []
     m.agendaPage = 0
     m.clock = mockNode()
+    m.clock.opacity = 1
+    m.clock.font.uri = "font:SystemFontFile"
+    m.clockPrevious = mockNode()
+    m.clockPrevious.opacity = 0
+    m.clockPeriod = mockNode()
+    m.clockPeriod.visible = false
+    m.clockFx = {control:"stop",state:"stopped"}
+    m.clockIn = {}
+    m.clockOut = {}
+    m.clockLift = {}
+    m.clockDrop = {}
+    m.appClockBase = [0,0]
+    m.appClockSleepAt = 0
+    m.appClockSleepSlot = -1
+    m.appClockSleepSeed = 0
     m.today = mockNode()
     m.todayBody = mockNode()
     m.heading = mockNode()
@@ -300,17 +326,27 @@ sub initMockApp()
 end sub
 
 function mockNode() as object
-    return {font:{size:30},text:"",visible:true,color:"",translation:[0,0],scale:[1,1],createChild:mockCreateChild,getChildCount:mockChildCount,removeChildrenIndex:mockClear,subtype:mockSubtype}
+    return {font:{size:30},text:"",visible:true,color:"",translation:[0,0],scale:[1,1],children:[],createChild:mockCreateChild,getChildCount:mockChildCount,getChild:mockGetChild,removeChildrenIndex:mockClear,subtype:mockSubtype}
 end function
 function mockCreateChild(kind as string) as object
-    return mockNode()
+    child = mockNode()
+    child.kind = kind
+    m.children.Push(child)
+    return child
 end function
 function mockChildCount() as integer
-    return 0
+    return m.children.Count()
 end function
 sub mockClear(count as integer, index as integer)
+    for i = 1 to count
+        m.children.Delete(index)
+    end for
 end sub
+function mockGetChild(index as integer) as object
+    return m.children[index]
+end function
 function mockSubtype() as string
+    if m.kind <> invalid then return m.kind
     return "Group"
 end function
 function mockFocus(focus as boolean) as boolean

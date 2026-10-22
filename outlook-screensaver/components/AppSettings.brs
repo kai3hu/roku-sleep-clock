@@ -10,7 +10,7 @@ function appPageName(id as string) as string
 end function
 
 function appDefaults() as object
-    return {schema:1, order:appPageIds(), enabled:{dashboard:true,agenda:false,weather:false,news:true,telegram:true,clock:false}, startup:"dashboard", lastPage:"dashboard", layout:"Balanced", fontSize:"Medium", clockSize:110, hourFormat:"24h", showDate:false, margin:100, nightStart:23, nightEnd:7, dayLevel:"Low", nightLevel:"Extra dim", tone:"Gray", wakeBoost:false, displayTimeout:300, autoplay:true, resumeAfter:180, dashboardSeconds:120, agendaSeconds:120, weatherSeconds:60, newsSeconds:60, clockSeconds:120, readingSpeed:"Normal", calendarDays:7, showEnded:true, calendarAllowed:true, calendarUrl:"", useBundledCalendar:true, weatherLocation:"35406", units:"C", technology:true, science:true, economy:true, telegramChannel:"DNSPODT", sourceArticles:true, clockStandby:false, keepRunning:false}
+    return {schema:1, order:appPageIds(), enabled:{dashboard:true,agenda:false,weather:false,news:true,telegram:true,clock:false}, startup:"dashboard", lastPage:"dashboard", layout:"Balanced", fontSize:"Medium", clockSize:110, clockFont:"System", clockAnimation:"Fade", hourFormat:"24h", showDate:false, margin:100, nightStart:23, nightEnd:7, dayLevel:"Low", nightLevel:"Extra dim", tone:"Gray", wakeBoost:false, displayTimeout:300, autoplay:true, resumeAfter:180, dashboardSeconds:120, agendaSeconds:120, weatherSeconds:60, newsSeconds:60, clockSeconds:120, readingSpeed:"Normal", calendarDays:7, showEnded:true, calendarAllowed:true, calendarUrl:"", useBundledCalendar:true, weatherLocation:"35406", units:"C", technology:true, science:true, economy:true, telegramChannel:"DNSPODT", sourceArticles:true, clockStandby:false, keepRunning:false}
 end function
 
 function appContains(values as object, value as dynamic) as boolean
@@ -85,6 +85,9 @@ function appStripPostalCode(text as string) as string
 end function
 
 function appSettingRows(group as string) as object
+    if group = "Clock"
+        return [{key:"clockFont",label:"Clock font",values:["System","Roboto Mono","Rajdhani","Digital","Lora"]},{key:"clockAnimation",label:"Minute transition",values:["Off","Fade","Slide"]},{key:"clockSize",label:"Clock size",values:[90,110,140]},{key:"hourFormat",label:"Time format",values:["24h","12h"]},{key:"showDate",label:"Show date",values:[false,true]},{key:"clockStandby",label:"Idle screen",values:[false,true]}]
+    end if
     if group = "Pages"
         rows = [{key:"startup",label:"Startup page",values:["last","dashboard","agenda","weather","news","telegram","clock"]}]
         for each id in appPageIds()
@@ -93,19 +96,19 @@ function appSettingRows(group as string) as object
         return rows
     end if
     if group = "Layout"
-        return [{key:"layout",label:"Dashboard layout",values:["Balanced","Agenda Focus","Minimal"]},{key:"fontSize",label:"Text size",values:["Small","Medium","Large"]},{key:"clockSize",label:"Clock size",values:[90,110,140]},{key:"hourFormat",label:"Clock format",values:["24h","12h"]},{key:"showDate",label:"Show date",values:[false,true]},{key:"margin",label:"Safe margins (%)",values:[90,95,100]},{key:"resetLayout",label:"Restore layout defaults",kind:"action"}]
+        return [{key:"layout",label:"Dashboard layout",values:["Balanced","Agenda Focus","Minimal"]},{key:"fontSize",label:"Text size",values:["Small","Medium","Large"]},{key:"margin",label:"Safe margins (%)",values:[90,95,100]},{key:"resetLayout",label:"Restore visual defaults",kind:"action"}]
     end if
     if group = "Display"
-        return [{key:"displayTimeout",label:"Black screen after idle (seconds; 0=Never)",values:[0,60,180,300,600,1800,3600]},{key:"clockStandby",label:"Show clock instead of black on idle",values:[false,true]},{key:"keepRunning",label:"Keep running (Experimental; 10 s every hour)",values:[false,true]},{key:"nightStart",label:"Night starts (local hour)",values:appHours()},{key:"nightEnd",label:"Night ends (local hour)",values:appHours()},{key:"dayLevel",label:"Day text brightness",values:["Extra dim","Low","Medium"]},{key:"nightLevel",label:"Night text brightness",values:["Extra dim","Low","Medium"]},{key:"tone",label:"Text tone",values:["Gray","Warm gray"]},{key:"wakeBoost",label:"Temporarily brighten while browsing",values:[false,true]}]
+        return [{key:"displayTimeout",label:"Idle timeout",values:[0,60,180,300,600,1800,3600]},{key:"keepRunning",label:"Keep running",values:[false,true]},{key:"nightStart",label:"Night starts",values:appHours()},{key:"nightEnd",label:"Night ends",values:appHours()},{key:"dayLevel",label:"Day brightness",values:["Extra dim","Low","Medium"]},{key:"nightLevel",label:"Night brightness",values:["Extra dim","Low","Medium"]},{key:"tone",label:"Text tone",values:["Gray","Warm gray"]},{key:"wakeBoost",label:"Reading boost",values:[false,true]}]
     end if
     if group = "Rotation"
         times = [30,60,90,120,180,300]
-        return [{key:"autoplay",label:"Automatic rotation",values:[false,true]},{key:"resumeAfter",label:"Resume after manual browsing (0=Never)",values:[0,60,180,300]},{key:"dashboardSeconds",label:"Dashboard seconds",values:times},{key:"agendaSeconds",label:"Agenda seconds",values:times},{key:"weatherSeconds",label:"Weather seconds",values:times},{key:"newsSeconds",label:"News seconds",values:times},{key:"clockSeconds",label:"Clock seconds",values:times},{key:"readingSpeed",label:"Article reading speed",values:["Slow","Normal","Fast"]}]
+        return [{key:"autoplay",label:"Automatic rotation",values:[false,true]},{key:"resumeAfter",label:"Resume rotation after",values:[0,60,180,300]},{key:"dashboardSeconds",label:"Dashboard duration",values:times},{key:"agendaSeconds",label:"Agenda duration",values:times},{key:"weatherSeconds",label:"Weather duration",values:times},{key:"newsSeconds",label:"News duration",values:times},{key:"clockSeconds",label:"Clock duration",values:times},{key:"readingSpeed",label:"Article reading speed",values:["Slow","Normal","Fast"]}]
     end if
     if group = "Content"
-        return [{key:"calendarDays",label:"Agenda range (days)",values:[1,3,7]},{key:"showEnded",label:"Include finished tasks today",values:[false,true]},{key:"calendarAllowed",label:"Outlook enabled",values:[false,true]},{key:"calendarUrl",label:"Set Outlook ICS link (hidden)",kind:"text"},{key:"clearCalendar",label:"Forget Outlook link and cached tasks",kind:"action"},{key:"weatherLocation",label:"Weather city or postal code",kind:"text"},{key:"units",label:"Temperature unit",values:["C","F"]},{key:"technology",label:"Technology news",values:[false,true]},{key:"science",label:"Science news",values:[false,true]},{key:"economy",label:"Economy news",values:[false,true]},{key:"telegramChannel",label:"Public Telegram channel",kind:"text"},{key:"sourceArticles",label:"Read Source articles instead of captions",values:[false,true]}]
+        return [{key:"calendarDays",label:"Agenda range",values:[1,3,7]},{key:"showEnded",label:"Finished tasks today",values:[false,true]},{key:"calendarAllowed",label:"Outlook enabled",values:[false,true]},{key:"calendarUrl",label:"Outlook link (hidden)",kind:"text"},{key:"clearCalendar",label:"Forget Outlook",kind:"action"},{key:"weatherLocation",label:"Weather location",kind:"text"},{key:"units",label:"Temperature unit",values:["C","F"]},{key:"technology",label:"Technology news",values:[false,true]},{key:"science",label:"Science news",values:[false,true]},{key:"economy",label:"Economy news",values:[false,true]},{key:"telegramChannel",label:"Telegram channel",kind:"text"},{key:"sourceArticles",label:"Read Source articles",values:[false,true]}]
     end if
-    return [{key:"refreshAll",label:"Refresh enabled data sources now",kind:"action"},{key:"refreshCalendar",label:"Refresh Outlook",kind:"action"},{key:"refreshWeather",label:"Refresh weather",kind:"action"},{key:"refreshNews",label:"Refresh news",kind:"action"},{key:"refreshTelegram",label:"Refresh Telegram",kind:"action"},{key:"testKeepRunning",label:"Test keep-running pulse now",kind:"action"},{key:"cancelSettings",label:"Cancel changes",kind:"action"},{key:"saveSettings",label:"Save settings",kind:"action"}]
+    return [{key:"refreshAll",label:"Refresh enabled sources",kind:"action"},{key:"refreshCalendar",label:"Refresh Outlook",kind:"action"},{key:"refreshWeather",label:"Refresh weather",kind:"action"},{key:"refreshNews",label:"Refresh news",kind:"action"},{key:"refreshTelegram",label:"Refresh Telegram",kind:"action"},{key:"testKeepRunning",label:"Test hourly playback now",kind:"action"}]
 end function
 
 function appHours() as object
@@ -119,7 +122,7 @@ end function
 function appNormalizeSettings(input as dynamic) as object
     settings = appDefaults()
     if type(input) <> "roAssociativeArray" then return settings
-    for each group in ["Pages","Layout","Display","Rotation","Content"]
+    for each group in ["Clock","Pages","Layout","Display","Rotation","Content"]
         for each row in appSettingRows(group)
             if row.values <> invalid
                 if appContains(row.values, input[row.key]) then settings[row.key] = input[row.key]

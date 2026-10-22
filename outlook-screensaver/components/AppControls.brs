@@ -8,6 +8,11 @@ sub initDashboardApp()
     m.appPlaying = true
     m.appMenu = ""
     m.appMenuIndex = 0
+    m.appMenuZone = "rows"
+    m.appFooterIndex = 0
+    m.appCategoryIndex = 0
+    m.appPicker = invalid
+    m.appConfirm = invalid
     m.appCurrent = "dashboard"
     m.appTelegramShown = false
     m.appNewsIndex = 0
@@ -24,6 +29,7 @@ sub initDashboardApp()
     m.appIdleClock.Mark()
     m.appUptime = CreateObject("roTimespan")
     m.appUptime.Mark()
+    appInitClock()
     appInitKeepRunning()
     m.appRotationClock = CreateObject("roTimespan")
     m.appRotationClock.Mark()
@@ -119,6 +125,7 @@ end sub
 sub appTick()
     if not m.appReady then return
     appKeepRunningTick()
+    appStandbyClockTick()
     idle = int(m.appIdleClock.TotalMilliseconds() / 1000)
     if appShouldSleep(m.appSettings, idle, m.appSleeping) then appSleep()
     if not m.appSleeping and m.appMenu = ""
@@ -154,13 +161,11 @@ sub appTick()
 end sub
 
 sub appUpdateClock(now as object)
-    if m.appSettings.hourFormat = "12h"
-        hour = now.GetHours() mod 12
-        if hour = 0 then hour = 12
-        suffix = " AM"
-        if now.GetHours() >= 12 then suffix = " PM"
-        m.clock.text = hour.ToStr() + ":" + twoDigits(now.GetMinutes()) + suffix
-    end if
+    parts = appClockTime(now.GetHours(),now.GetMinutes(),m.appSettings.hourFormat)
+    appSetClockText(parts.digits)
+    m.clockPeriod.text = parts.period
+    appClockPeriodPosition()
+    if m.appMenuClockSample <> invalid then m.appMenuClockSample.text = parts.digits
     m.appDate.text = now.GetYear().ToStr() + "-" + twoDigits(now.GetMonth()) + "-" + twoDigits(now.GetDayOfMonth())
     m.appDate.color = m.displayColor
     m.appDate.visible = m.appSettings.showDate and not m.appSleeping and m.appMenu = ""
@@ -196,11 +201,13 @@ sub appSleep()
     if m.appMenu <> "" then appCloseMenu(false)
     appPauseForInput()
     m.appSleeping = true
+    appStopClockTransition()
     m.content.visible = false
     m.appChrome.visible = false
     if m.appSettings.clockStandby
         m.content.visible = true
         appSetVisibility("clock")
+        appEnterClockStandby()
     end if
 end sub
 
@@ -386,6 +393,7 @@ sub appBrowseItem(direction as integer)
 end sub
 
 sub appApplyLayout()
+    appStopClockTransition()
     settings = m.appSettings
     m.top.FindNode("weatherLocation").text = ucase(appWeatherCity(m.appCommitted.weatherLocation, m.appWeatherRaw))
     if m.appCurrent = "dashboard" or m.appCurrent = "agenda" then showTodayPage()
@@ -393,8 +401,8 @@ sub appApplyLayout()
     m.content.scale = [scale,scale]
     m.content.translation = [120 + (1 - scale) * 840,80 + (1 - scale) * 470]
     if m.appMenu <> ""
-        m.content.scale = [0.43,0.43]
-        m.content.translation = [1020,250]
+        m.content.scale = [0.38,0.38]
+        m.content.translation = [1100,420]
     end if
     m.clock.font.size = settings.clockSize
     m.clock.width = 760
@@ -441,8 +449,6 @@ sub appApplyLayout()
         m.weatherGroup.scale = [0.75,0.75]
     else if m.appCurrent = "dashboard" and settings.layout = "Minimal"
         m.clock.translation = [300,180]
-        m.clock.font.size = 140
-        m.clock.height = 185
         m.today.translation = [312,380]
         m.todayBody.translation = [312,445]
         m.todayBody.height = 150
@@ -466,7 +472,13 @@ sub appApplyLayout()
     m.top.FindNode("newsUrl").translation = [0,630]
     m.top.FindNode("newsAttribution").translation = [0,695]
     m.displayColor = ""
+    appClockStyle()
     updateClock()
+    if m.appSleeping and m.appSettings.clockStandby
+        ' A five-minute data refresh must not reset the standby clock anchor.
+        m.appClockSleepSlot = -1
+        appStandbyClockTick()
+    end if
 end sub
 
 sub appOpenMenu(group as string)
@@ -477,9 +489,14 @@ sub appOpenMenu(group as string)
     end if
     m.appMenu = group
     m.appMenuIndex = 0
+    m.appMenuZone = "rows"
+    m.appFooterIndex = 0
+    m.appPicker = invalid
+    m.appConfirm = invalid
     m.appMenuNote = ""
     m.appOverlay.visible = true
     m.appDate.visible = false
+    m.appHint.visible = false
     appApplyLayout()
     appDrawMenu()
 end sub
@@ -497,11 +514,9 @@ function appMenuRows() as object
     end if
     if m.appMenu = "Settings"
         rows = []
-        for each name in ["Pages","Layout","Display","Rotation","Content","Status"]
+        for each name in appSettingGroups()
             rows.Push({key:name,label:name,kind:"group"})
         end for
-        rows.Push({key:"saveSettings",label:"Save and return",kind:"action"})
-        rows.Push({key:"cancelSettings",label:"Cancel changes",kind:"action"})
         return rows
     end if
     if m.appMenu = "Pages"
@@ -514,7 +529,7 @@ function appMenuRows() as object
     return appSettingRows(m.appMenu)
 end function
 
-sub appDrawMenu()
+sub appDrawNavigationMenu()
     if m.appKeyboard <> invalid
         appDrawKeyboard()
         return
@@ -598,7 +613,7 @@ sub appDrawMenu()
     preview.color = "0x484848FF"
 end sub
 
-function appMenuKey(key as string) as boolean
+function appNavigationKey(key as string) as boolean
     rows = appMenuRows()
     row = rows[m.appMenuIndex]
     if key = "up" or key = "down"
@@ -670,7 +685,7 @@ sub appMenuAction(action as string)
         appSleep()
     else if action = "resetLayout"
         defaults = appDefaults()
-        for each key in ["layout","fontSize","clockSize","hourFormat","showDate","margin"]
+        for each key in ["layout","fontSize","clockSize","clockFont","clockAnimation","hourFormat","showDate","margin"]
             m.appSettings[key] = defaults[key]
         end for
         m.appMenuNote = "Layout defaults previewed; choose Save to keep."
@@ -683,7 +698,7 @@ sub appMenuAction(action as string)
         refreshData()
         m.appMenuNote = "Refreshing sources used by enabled pages."
     else if action = "testKeepRunning"
-        appTestKeepRunning()
+        appMenuTestKeepRunning()
     else
         source = lcase(action.Replace("refresh", ""))
         m.appPendingRefresh[source] = true
@@ -693,13 +708,12 @@ end sub
 
 sub appCloseMenu(save as boolean)
     m.appKeyboard = invalid
-    oldSettings = appNormalizeSettings(m.appCommitted)
+    m.appPicker = invalid
+    m.appConfirm = invalid
+    m.appMenuZone = "rows"
     if m.appMenu <> "Navigate"
         if save
-            m.appSettings = appNormalizeSettings(m.appSettings)
-            m.appCommitted = appNormalizeSettings(m.appSettings)
-            m.appSettingsDirty = true
-            m.appPlaying = m.appSettings.autoplay
+            appCommitSettings()
         else
             m.appSettings = appNormalizeSettings(m.appCommitted)
         end if
@@ -707,7 +721,6 @@ sub appCloseMenu(save as boolean)
     m.appMenu = ""
     m.appOverlay.visible = false
     m.appIdleClock.Mark()
-    if save then appSettingsApplied(oldSettings)
     oldPage = m.appCurrent
     if not m.appSettings.enabled[m.appCurrent] then m.appCurrent = appStartupPage(m.appSettings)
     if oldPage <> m.appCurrent
@@ -831,7 +844,7 @@ sub appDrawKeyboard()
         label.translation = [x,y]
         label.color = "0x686868FF"
     end for
-    note = "Arrows: choose key   OK: type   Back: cancel" + chr(10) + "SAVE updates the preview. Save settings to persist." + chr(10) + "Calendar links stay masked. Idle black screen still applies."
+    note = "Arrows: choose key   OK: type   Back: cancel" + chr(10) + "SAVE adds this text to the preview; PLAY/PAUSE saves settings." + chr(10) + "Calendar links stay masked. Idle black screen still applies."
     if m.appMenuNote <> "" then note = m.appMenuNote + chr(10) + note
     label = createWeatherLabel(m.appOverlay,note,20,840,130)
     label.translation = [60,900]

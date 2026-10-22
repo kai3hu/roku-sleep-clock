@@ -88,9 +88,12 @@ sub updateClock()
     now.ToLocalTime()
     hour = now.GetHours()
     minute = now.GetMinutes()
-    m.clock.text = twoDigits(hour) + ":" + twoDigits(minute)
     applyDisplaySchedule(hour)
-    if m.interactive = true then appUpdateClock(now)
+    if m.interactive = true
+        appUpdateClock(now)
+    else
+        m.clock.text = twoDigits(hour) + ":" + twoDigits(minute)
+    end if
 end sub
 
 sub applyDisplaySchedule(localHour as integer)

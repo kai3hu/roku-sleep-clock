@@ -7,8 +7,14 @@
     <children>
         <Rectangle id="blackBackground" width="1920" height="1080" color="0x000000FF" />
         <Group id="content" translation="[120,80]">
+            <Label id="clockPrevious" width="760" height="185" opacity="0" color="0x0C0C0CFF">
+                <Font role="font" uri="font:SystemFontFile" size="110" />
+            </Label>
             <Label id="clock" width="600" height="150" color="0x0C0C0CFF">
                 <Font role="font" uri="font:SystemFontFile" size="110" />
+            </Label>
+            <Label id="clockPeriod" width="110" height="65" visible="false" color="0x0C0C0CFF">
+                <Font role="font" uri="font:SystemFontFile" size="28" />
             </Label>
             <Label id="today" translation="[12,155]" width="900" height="50" text="TODAY  /  Loading calendar..." color="0x0C0C0CFF">
                 <Font role="font" uri="font:SystemFontFile" size="30" />
@@ -89,6 +95,12 @@
             </Group>
         </Group>
         <Timer id="tick" duration="1" repeat="true" />
+        <Animation id="clockTransition" duration="0.24" repeat="false" easeFunction="linear">
+            <FloatFieldInterpolator id="clockIn" key="[0,1]" keyValue="[0,1]" fieldToInterp="clock.opacity" />
+            <FloatFieldInterpolator id="clockOut" key="[0,1]" keyValue="[1,0]" fieldToInterp="clockPrevious.opacity" />
+            <Vector2DFieldInterpolator id="clockLift" key="[0,1]" keyValue="[[0,0],[0,0]]" fieldToInterp="clock.translation" />
+            <Vector2DFieldInterpolator id="clockDrop" key="[0,1]" keyValue="[[0,0],[0,0]]" fieldToInterp="clockPrevious.translation" />
+        </Animation>
         <Timer id="refresh" duration="300" repeat="true" />
         <Timer id="agendaPageTimer" duration="20" repeat="true" />
         <Timer id="rotationTimer" duration="120" repeat="false" />
@@ -102,6 +114,8 @@
     <script type="text/brightscript" uri="pkg:/components/SharedContent.brs" />
     <script type="text/brightscript" uri="pkg:/components/TelegramContent.brs" />
     <script type="text/brightscript" uri="pkg:/components/AppSettings.brs" />
+    <script type="text/brightscript" uri="pkg:/components/AppClock.brs" />
+    <script type="text/brightscript" uri="pkg:/components/AppMenu.brs" />
     <script type="text/brightscript" uri="pkg:/components/AppKeepRunning.brs" />
     <script type="text/brightscript" uri="pkg:/components/AppControls.brs" />
     <script type="text/brightscript" uri="pkg:/components/NightScheduleScene.brs" />
